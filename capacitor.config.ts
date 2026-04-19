@@ -6,11 +6,11 @@ const config: CapacitorConfig = {
   webDir: "dist",
   ios: {
     contentInset: "always",
-    // Disable WKWebView's rubber-band bounce so the app feels native, not
-    // like a webpage. Combined with `overscroll-behavior: none` on the body
-    // and `user-scalable=no` in the viewport meta, scrolling/zooming behaves
-    // like a regular UIKit app.
-    scrollEnabled: false,
+    // NOTE: Do NOT set `scrollEnabled: false` here — that disables scrolling
+    // *entirely*, not just the rubber-band bounce. The native-feel "no
+    // bounce" behavior is handled by `overscroll-behavior: none` on the body
+    // (see src/index.css) and `touch-action: pan-y`, which keep normal
+    // vertical scrolling intact while suppressing the horizontal bounce.
     limitsNavigationsToAppBoundDomains: true,
   },
   android: {
