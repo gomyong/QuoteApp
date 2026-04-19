@@ -4,6 +4,17 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+//
+// NOTE on bundle splitting:
+// We intentionally do NOT use `build.rollupOptions.output.manualChunks` here.
+// Manually splitting React (or React-using libs like Radix / framer-motion /
+// react-router) into separate chunks frequently breaks ES module evaluation
+// order in the iOS WKWebView and surfaces as runtime errors like
+// `TypeError: undefined is not an object (evaluating 'b.forwardRef')` or
+// `... 'D.createContext'`. Vite/Rollup already do good automatic code-splitting
+// at every dynamic `import()` boundary; OCR (tesseract.js), the native OCR
+// adapter, and the image picker are all dynamically imported, so they are
+// already lazy-loaded into their own chunks.
 export default defineConfig(({ mode }) => ({
   base: "./",
   server: {
@@ -18,23 +29,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom", "react-router-dom", "scheduler"],
   },
   build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (!id.includes("node_modules")) return undefined;
-          if (id.includes("react-dom") || id.includes("react/")) return "react";
-          if (id.includes("@radix-ui")) return "radix";
-          if (id.includes("framer-motion")) return "motion";
-          if (id.includes("@supabase") || id.includes("@tanstack")) return "data";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          if (id.includes("tesseract")) return "ocr-web";
-          if (id.includes("idb")) return "db";
-          return "vendor";
-        },
-      },
-    },
+    chunkSizeWarningLimit: 1500,
   },
 }));

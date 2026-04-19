@@ -17,6 +17,28 @@
     <meta property="og:title" content="Quote — 책 한 줄 노트" />
     <meta property="og:description" content="책의 한 줄을 OCR로 빠르게 기록하는 노트" />
     <meta property="og:type" content="website" />
+
+    <style>
+      html, body { background-color: #1C2431; color: #F4F5F6; margin: 0; min-height: 100vh; }
+      #root:empty::before {
+        content: "Quote 앱 불러오는 중...";
+        display: flex; align-items: center; justify-content: center;
+        position: fixed; inset: 0;
+        font: 14px -apple-system, system-ui, sans-serif; color: #9aa3af;
+      }
+    </style>
+    <script>
+      window.addEventListener("error", function (e) {
+        var el = document.getElementById("boot-error");
+        if (!el) {
+          el = document.createElement("pre");
+          el.id = "boot-error";
+          el.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;max-height:50vh;overflow:auto;padding:12px;border-radius:12px;background:#2a1414;color:#ffb4b4;font:12px ui-monospace,Menlo,monospace;white-space:pre-wrap;z-index:9999;";
+          document.body.appendChild(el);
+        }
+        el.textContent = "Boot error: " + (e?.message || e) + "\n" + (e?.error?.stack || "");
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -18,20 +18,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let unsub: (() => void) | undefined;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session ?? null);
-      setLoading(false);
-    });
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (mounted) setSession(data.session ?? null);
+      } catch (e) {
+        console.warn("[auth] getSession failed:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-    });
+      try {
+        const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+          if (mounted) setSession(nextSession);
+        });
+        unsub = () => data.subscription.unsubscribe();
+      } catch (e) {
+        console.warn("[auth] onAuthStateChange failed:", e);
+      }
+    })();
 
     return () => {
       mounted = false;
-      subscription.subscription.unsubscribe();
+      unsub?.();
     };
   }, []);
 

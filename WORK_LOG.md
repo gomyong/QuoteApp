@@ -61,6 +61,44 @@ Summary of work on the `julive-your-intelligent-aesthetic-note` repository, refo
 
 ---
 
+## PR7 — iOS WebView blank-screen hardening
+
+Symptom: After `npm run ios`, the simulator showed only the dark splash
+background with a thin white strip at the bottom. Nothing rendered.
+
+Root cause: `vite.config.ts` was using `build.rollupOptions.output.manualChunks`
+to split React, Radix, framer-motion, supabase, etc. into separate chunks. In
+the iOS WKWebView this broke ES module evaluation order — non-React chunks
+were evaluated before the React chunk had finished initializing, surfacing as
+runtime crashes such as:
+
+- `TypeError: undefined is not an object (evaluating 'D.createContext')`
+- `TypeError: undefined is not an object (evaluating 'b.forwardRef')`
+
+Because the React tree threw during mount, `<div id="root">` stayed empty and
+the WKWebView's default white background bled through under the body.
+
+Fix:
+
+- Removed `manualChunks` entirely. Vite/Rollup's automatic code-splitting at
+  every dynamic `import()` boundary is sufficient; OCR (`tesseract.js`), the
+  native OCR adapter, and the image picker are already lazy-loaded.
+- Added `resolve.dedupe: ["react", "react-dom", "react-router-dom", "scheduler"]`
+  to guarantee a single React instance across the dependency graph.
+- Hardened `src/lib/supabase.ts` with `safeCreateClient()` so missing env vars
+  or storage adapter errors no longer throw at import time.
+- Wrapped `AuthProvider`'s `getSession()` / `onAuthStateChange()` in
+  try/catch so first-paint never depends on a network round trip.
+- Added a defensive boot-error overlay and dark-bg fallback in `index.html`,
+  so any future mount failure is visible in-app instead of leaving a
+  blank screen.
+
+Verified: clean `npm run cap:sync` build produces a single main chunk plus
+small dynamic chunks for OCR, and the iOS Simulator (iPhone 17 Pro / iOS 26.4)
+renders the home screen normally.
+
+---
+
 ## Follow-ups (not done yet)
 
 - Deep link / universal link for magic link return to the native app (`app.quote.note://` + Supabase redirect URLs).
