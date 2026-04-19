@@ -177,7 +177,7 @@ const Capture = () => {
         </motion.div>
       </div>
 
-      <BottomNav />
+      {!showOcr && <BottomNav />}
 
       {showOcr && (
         <CaptureFromImage

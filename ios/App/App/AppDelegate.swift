@@ -7,8 +7,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Capacitor 8 (SPM mode) only auto-discovers plugins shipped via a
+        // Swift Package manifest. In-app plugins (like our AppleVisionOcrPlugin
+        // living in the App target) are NOT picked up automatically — even
+        // though the class loads fine into the Obj-C runtime.
+        //
+        // We register the plugin instance against the bridge as soon as the
+        // root CAPBridgeViewController (declared in Main.storyboard) is in
+        // place. This must happen before any JS code calls
+        // `Capacitor.isPluginAvailable("AppleVisionOcr")`, which it doesn't
+        // until the user triggers OCR — so a deferred async dispatch is safe.
+        registerInAppPlugins()
         return true
+    }
+
+    private func registerInAppPlugins() {
+        let attempt: () -> Bool = { [weak self] in
+            guard let bridgeVC = self?.window?.rootViewController as? CAPBridgeViewController,
+                  let bridge = bridgeVC.bridge else {
+                return false
+            }
+            bridge.registerPluginInstance(AppleVisionOcrPlugin())
+            NSLog("[AppDelegate] Registered AppleVisionOcrPlugin against Capacitor bridge")
+            return true
+        }
+
+        // Try a few times across the next run-loop ticks because the bridge
+        // is created lazily by CAPBridgeViewController.viewDidLoad().
+        var remaining = 30
+        func tick() {
+            if attempt() { return }
+            remaining -= 1
+            if remaining <= 0 {
+                NSLog("[AppDelegate] WARN: Could not find CAPBridgeViewController to register plugins")
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { tick() }
+        }
+        DispatchQueue.main.async { tick() }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

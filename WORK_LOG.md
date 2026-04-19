@@ -99,6 +99,90 @@ renders the home screen normally.
 
 ---
 
+## PR8 — On-device OCR fixes: modal touch, permissions, Apple Vision
+
+Three things broke in sequence on the real iPhone the first time the user
+tried OCR. Each one is fixed end-to-end.
+
+### 8.1 — "사진" 모달 안의 카메라/사진 버튼이 터치되지 않음
+
+Cause: `CaptureFromImage` modal used `z-40`, but `BottomNav` was `z-50`. The
+nav also has a `motion.div` indicator with `absolute -top-2` that renders
+just above the nav bar, which on a small viewport intercepts taps inside
+the modal. Sonner's portal also injects a high-z fixed container that can
+swallow taps in the WKWebView.
+
+Fix:
+- Modal lifted to `z-[60]`, content placed in its own stacking context
+  (`relative z-10`), and `touch-action: manipulation` added to the
+  container and all action buttons.
+- All buttons get `type="button"` + `cursor-pointer` so iOS WKWebView
+  reliably routes the tap.
+- `BottomNav` is now hidden while the OCR modal is open
+  (`{!showOcr && <BottomNav />}`) so there's no z-index race at all.
+
+### 8.2 — `NSPhotoLibraryAddUsageDescription` missing → Camera plugin refuses to run
+
+`Info.plist` had Camera + Photo Library read permissions but not the "save
+to library" one. `@capacitor/camera` requires it whenever the camera is
+invoked. Re-ran `npm run ios:patch`, which idempotently added the missing
+key with a Korean usage string.
+
+### 8.3 — "plugin not implemented on ios" → garbled Korean OCR
+
+`@pantrist/capacitor-plugin-ml-kit-text-recognition` ships only a CocoaPods
+podspec (no `Package.swift`). Capacitor 8's iOS project is SPM-mode, so the
+plugin silently failed to register. The OCR pipeline therefore fell all the
+way through to `tesseract.js`, which (a) downloads its language packs from
+a CDN that the WKWebView origin (`capacitor://localhost`) can't reach
+(`Updated list with error: DownloadFailed` x6) and (b) is much less
+accurate on Korean than Apple Vision anyway.
+
+The structural fix was to own the OCR plugin instead of depending on a
+third-party one:
+
+- Removed `@pantrist/capacitor-plugin-ml-kit-text-recognition` from
+  `package.json`.
+- Added a tiny in-app Capacitor plugin
+  `ios/App/App/AppleVisionOcrPlugin.swift` (~140 LoC) that wraps
+  `VNRecognizeTextRequest`. Korean is officially supported on iOS 16+
+  with the same engine as system Live Text; no model download, works
+  offline, 0 MB app-size impact.
+- Forced Korean+English (`recognitionLanguages = ["ko-KR", "en-US"]`,
+  `automaticallyDetectsLanguage = false`) because auto-detect frequently
+  mis-classifies Hangul and ruins accuracy.
+- New JS adapter `src/features/ocr/ocr.native.ts` calls the plugin via
+  `registerPlugin<AppleVisionOcrPlugin>("AppleVisionOcr")`.
+
+### 8.4 — In-app plugin not picked up by Capacitor 8 SPM auto-discovery
+
+Even after the file was added to the App target's Compile Sources,
+`Capacitor.isPluginAvailable("AppleVisionOcr")` returned `false`. Capacitor
+8's SPM mode only auto-discovers plugins enumerated in the generated
+`Package.swift`; in-app plugins must be registered manually against the
+bridge.
+
+Fix in `AppDelegate.swift`:
+
+- After `didFinishLaunching`, asynchronously poll for the root
+  `CAPBridgeViewController` (it's created lazily by the storyboard) and
+  call `bridge.registerPluginInstance(AppleVisionOcrPlugin())` as soon as
+  the bridge exists. Up to 30 retries at 50 ms intervals — completes well
+  before any JS code first calls `getOcr()`.
+- `OcrService.getOcr()` no longer caches its resolution, so even if the
+  very first call lost the race, subsequent calls immediately switch to
+  AppleVision once it registers.
+- Diagnostic NSLogs added at every interesting boundary
+  (`[AppDelegate] Registered ...`, `[AppleVisionOcr] plugin loaded by
+  Capacitor bridge`, `[AppleVisionOcr] OK — N lines, langs=...`) so future
+  regressions are obvious from Xcode console.
+
+Result: on iPhone, OCR now runs entirely on-device through Apple Vision,
+with `tesseract.js` retained only as a defensive fallback for
+non-iOS / web / XR-browser runtimes.
+
+---
+
 ## Follow-ups (not done yet)
 
 - Deep link / universal link for magic link return to the native app (`app.quote.note://` + Supabase redirect URLs).

@@ -27,14 +27,19 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm overflow-y-auto">
-      <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
+    <div
+      className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto overscroll-contain"
+      style={{ touchAction: "manipulation" }}
+    >
+      <div className="relative z-10 max-w-lg mx-auto px-5 pt-12 pb-24">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-foreground text-lg font-semibold">사진으로 기록</h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="p-2 rounded-full hover:bg-glass-border/20"
+            className="p-2 rounded-full hover:bg-glass-border/20 cursor-pointer"
+            style={{ touchAction: "manipulation" }}
           >
             <X size={18} className="text-muted-foreground" />
           </button>
@@ -43,15 +48,19 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
         {!image && (
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => start("camera")}
-              className="glass rounded-2xl py-8 flex flex-col items-center gap-2"
+              className="glass rounded-2xl py-8 flex flex-col items-center gap-2 cursor-pointer active:scale-[0.98] transition-transform"
+              style={{ touchAction: "manipulation" }}
             >
               <Camera size={22} className="text-accent" />
               <span className="text-sm">카메라로 촬영</span>
             </button>
             <button
+              type="button"
               onClick={() => start("library")}
-              className="glass rounded-2xl py-8 flex flex-col items-center gap-2"
+              className="glass rounded-2xl py-8 flex flex-col items-center gap-2 cursor-pointer active:scale-[0.98] transition-transform"
+              style={{ touchAction: "manipulation" }}
             >
               <ImageIcon size={22} className="text-accent" />
               <span className="text-sm">사진에서 선택</span>
