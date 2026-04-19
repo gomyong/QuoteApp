@@ -60,9 +60,30 @@
     @apply border-border;
   }
 
+  html, body {
+    /* Native-feel: no rubber-band, no pinch zoom, no callouts/highlights. */
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: pan-y;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Pretendard Variable', 'Pretendard', 'Inter', system-ui, sans-serif;
+  }
+
+  /* Allow text selection inside actual text content; disable on chrome. */
+  button, nav, header, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Inputs must be 16px+ on iOS, otherwise focus auto-zooms (even with
+     user-scalable=no on some iOS versions). */
+  input, textarea, select {
+    font-size: 16px;
   }
 
   h1, h2, h3, h4, h5, h6 {

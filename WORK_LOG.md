@@ -183,6 +183,32 @@ non-iOS / web / XR-browser runtimes.
 
 ---
 
+## PR9 — Native-feel scrolling/zoom + 3-line clamp with expand toggle
+
+### Native-feel polish
+The web app inside the WKWebView still bounced like a webpage and could be
+pinch-zoomed. Three-layer fix:
+
+- `capacitor.config.ts`: `ios.scrollEnabled: false` disables the WKWebView
+  rubber-band; `limitsNavigationsToAppBoundDomains: true` keeps any in-app
+  navigation inside our origin.
+- `index.html` viewport: `maximum-scale=1.0, minimum-scale=1.0,
+  user-scalable=no` — no pinch zoom.
+- `index.css`: `overscroll-behavior: none`, `-webkit-text-size-adjust: 100%`,
+  `-webkit-tap-highlight-color: transparent`, `-webkit-touch-callout: none`,
+  `touch-action: pan-y`. Plus `font-size: 16px` on inputs/textarea/select
+  (iOS auto-zooms focus on smaller sizes even with user-scalable=no).
+
+### 3-line clamp + expand
+`QuoteCard.tsx` now caps long quotes at 3 lines and renders a "펼쳐보기" /
+"접기" toggle when (and only when) the content actually overflows. Detection
+uses an offscreen measurement copy of the same paragraph plus `ResizeObserver`,
+so the affordance never appears for short quotes. Toggle animates with
+`AnimatePresence`. All buttons get `type="button"` + `touch-action:
+manipulation` for reliable WKWebView taps.
+
+---
+
 ## Follow-ups (not done yet)
 
 - Deep link / universal link for magic link return to the native app (`app.quote.note://` + Supabase redirect URLs).
