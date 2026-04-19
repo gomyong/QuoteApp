@@ -1,71 +1,65 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import DailyQuote from "@/components/DailyQuote";
 import QuoteCard from "@/components/QuoteCard";
 import BottomNav from "@/components/BottomNav";
-
-const sampleQuotes = [
-  {
-    content: "우리가 바라는 것은 완벽한 삶이 아니라, 완전한 삶이다.",
-    bookTitle: "죽음의 수용소에서",
-    author: "빅터 프랭클",
-    thoughts: "오늘 아침 산책하며 떠오른 문장",
-    isFavorite: true,
-  },
-  {
-    content: "The only way to do great work is to love what you do.",
-    bookTitle: "Steve Jobs",
-    author: "Walter Isaacson",
-    isFavorite: false,
-  },
-  {
-    content: "결국 우리는 모두 이야기가 된다.",
-    bookTitle: "어린 왕자",
-    author: "생텍쥐페리",
-    thoughts: "비 오는 밤에 읽었다",
-    isFavorite: true,
-  },
-  {
-    content: "삶이 있는 한, 희망도 있다.",
-    bookTitle: "마르틴 루터 킹",
-    author: "마르틴 루터 킹",
-    isFavorite: false,
-  },
-];
+import { useQuotes } from "@/sync/useQuotes";
+import { repo } from "@/sync/repo";
+import type { Book } from "@/sync/types";
 
 const Index = () => {
+  const { quotes, refresh } = useQuotes();
+  const [books, setBooks] = useState<Book[]>([]);
+
+  useEffect(() => {
+    repo.listBooks().then(setBooks);
+  }, [quotes]);
+
+  const bookById = useMemo(() => {
+    const map = new Map<string, Book>();
+    for (const b of books) map.set(b.id, b);
+    return map;
+  }, [books]);
+
+  const recent = quotes.slice(0, 5);
+
   const now = new Date();
   const hour = now.getHours();
   const greeting =
     hour < 12 ? "좋은 아침이에요" : hour < 18 ? "좋은 오후예요" : "좋은 저녁이에요";
 
+  const featured = recent[0];
+  const featuredBook = featured?.book_id ? bookById.get(featured.book_id) : undefined;
+
   return (
     <div className="min-h-screen bg-background safe-bottom">
       <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h2 className="text-muted-foreground text-sm font-medium">
-            {greeting} ✦
-          </h2>
-          <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">
-            Julive
-          </h1>
+          <h2 className="text-muted-foreground text-sm font-medium">{greeting} ✦</h2>
+          <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">Quote</h1>
         </motion.div>
 
-        {/* Daily Quote */}
         <div className="mb-8">
-          <DailyQuote
-            content="삶이란 속도를 높이는 것만이 전부가 아니다."
-            bookTitle="간디 자서전"
-            author="마하트마 간디"
-          />
+          {featured ? (
+            <DailyQuote
+              content={featured.content}
+              bookTitle={featuredBook?.title}
+              author={featuredBook?.author ?? undefined}
+            />
+          ) : (
+            <DailyQuote
+              content="첫 문장을 기록해보세요. 카메라로 찍으면 자동으로 글자가 인식돼요."
+              bookTitle="환영합니다"
+              author="Quote"
+            />
+          )}
         </div>
 
-        {/* Recent Quotes */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -75,9 +69,30 @@ const Index = () => {
             최근 기록
           </h3>
           <div className="space-y-3">
-            {sampleQuotes.map((quote, i) => (
-              <QuoteCard key={i} {...quote} index={i} />
-            ))}
+            {recent.length === 0 ? (
+              <div className="glass rounded-2xl p-5 text-sm text-muted-foreground">
+                아직 기록이 없어요.
+              </div>
+            ) : (
+              recent.map((q, i) => {
+                const b = q.book_id ? bookById.get(q.book_id) : undefined;
+                return (
+                  <QuoteCard
+                    key={q.id}
+                    content={q.content}
+                    bookTitle={b?.title}
+                    author={b?.author ?? undefined}
+                    thoughts={q.thoughts ?? undefined}
+                    isFavorite={q.is_favorite}
+                    onToggleFavorite={async () => {
+                      await repo.toggleFavorite(q.id);
+                      refresh();
+                    }}
+                    index={i}
+                  />
+                );
+              })
+            )}
           </div>
         </motion.div>
       </div>

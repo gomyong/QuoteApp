@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, PlusCircle, BookOpen } from "lucide-react";
+import { Home, PlusCircle, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
 const navItems = [
   { path: "/", icon: Home, label: "홈" },
   { path: "/capture", icon: PlusCircle, label: "기록" },
   { path: "/library", icon: BookOpen, label: "서재" },
+  { path: "/settings", icon: SettingsIcon, label: "설정" },
 ];
 
 const BottomNav = () => {

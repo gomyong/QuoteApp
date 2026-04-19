@@ -1,25 +1,54 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Mic, Type, BookOpen, Tag, Send } from "lucide-react";
+import { Camera, Mic, Type, BookOpen, Tag, Send, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import CaptureFromImage from "@/features/capture/CaptureFromImage";
+import type { PickedImage } from "@/features/ocr/pickImage";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { repo } from "@/sync/repo";
+import { syncOnce } from "@/sync/syncEngine";
 
 const Capture = () => {
+  const { user } = useAuth();
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [thoughts, setThoughts] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showOcr, setShowOcr] = useState(false);
+  const lastImageRef = useRef<PickedImage | null>(null);
 
-  const handleSave = () => {
-    if (!content.trim()) return;
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      setContent("");
-      setBookTitle("");
-      setAuthor("");
-      setThoughts("");
-    }, 2000);
+  const handleSave = async () => {
+    if (!content.trim() || saving) return;
+    setSaving(true);
+    try {
+      await repo.saveQuote(
+        {
+          content,
+          thoughts,
+          book: bookTitle.trim()
+            ? { title: bookTitle, author: author || null }
+            : null,
+          image: lastImageRef.current
+            ? { base64: lastImageRef.current.base64, mime: lastImageRef.current.mimeType }
+            : null,
+        },
+        user?.id ?? null,
+      );
+      lastImageRef.current = null;
+      setSaved(true);
+      void syncOnce();
+      setTimeout(() => {
+        setSaved(false);
+        setContent("");
+        setBookTitle("");
+        setAuthor("");
+        setThoughts("");
+      }, 1400);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -47,13 +76,15 @@ const Capture = () => {
           className="flex gap-3 mb-6"
         >
           {[
-            { icon: Camera, label: "사진" },
-            { icon: Mic, label: "음성" },
-            { icon: Type, label: "직접 입력" },
-          ].map(({ icon: Icon, label }) => (
+            { icon: Camera, label: "사진", onClick: () => setShowOcr(true) },
+            { icon: Mic, label: "음성", onClick: () => undefined, disabled: true },
+            { icon: Type, label: "직접 입력", onClick: () => undefined },
+          ].map(({ icon: Icon, label, onClick, disabled }) => (
             <button
               key={label}
-              className="flex-1 glass rounded-xl py-3 flex flex-col items-center gap-1.5 hover:bg-glass-border/20 transition-colors active:scale-[0.98]"
+              onClick={onClick}
+              disabled={disabled}
+              className="flex-1 glass rounded-xl py-3 flex flex-col items-center gap-1.5 hover:bg-glass-border/20 transition-colors active:scale-[0.98] disabled:opacity-50"
             >
               <Icon size={18} className="text-accent" />
               <span className="text-muted-foreground text-xs">{label}</span>
@@ -116,8 +147,9 @@ const Capture = () => {
           {/* Save Button */}
           <motion.button
             onClick={handleSave}
+            disabled={saving}
             whileTap={{ scale: 0.97 }}
-            className={`w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-medium transition-all duration-300 ${
+            className={`w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-medium transition-all duration-300 disabled:opacity-70 ${
               saved
                 ? "bg-accent/20 text-accent"
                 : "bg-accent text-accent-foreground hover:bg-accent/90"
@@ -130,6 +162,11 @@ const Capture = () => {
               >
                 ✓ 저장되었어요
               </motion.span>
+            ) : saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>저장 중...</span>
+              </>
             ) : (
               <>
                 <Send size={16} />
@@ -141,6 +178,17 @@ const Capture = () => {
       </div>
 
       <BottomNav />
+
+      {showOcr && (
+        <CaptureFromImage
+          onClose={() => setShowOcr(false)}
+          onConfirm={(text, image) => {
+            setContent((prev) => (prev ? `${prev.trim()}\n${text}` : text));
+            lastImageRef.current = image ?? null;
+            setShowOcr(false);
+          }}
+        />
+      )}
     </div>
   );
 };

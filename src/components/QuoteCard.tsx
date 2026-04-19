@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface QuoteCardProps {
   content: string;
@@ -10,6 +10,7 @@ interface QuoteCardProps {
   isFavorite?: boolean;
   createdAt?: string;
   index?: number;
+  onToggleFavorite?: () => void | Promise<void>;
 }
 
 const QuoteCard = ({
@@ -18,10 +19,16 @@ const QuoteCard = ({
   author,
   thoughts,
   isFavorite = false,
-  createdAt,
   index = 0,
+  onToggleFavorite,
 }: QuoteCardProps) => {
   const [liked, setLiked] = useState(isFavorite);
+  useEffect(() => setLiked(isFavorite), [isFavorite]);
+
+  const handleClick = () => {
+    setLiked((v) => !v);
+    void onToggleFavorite?.();
+  };
 
   return (
     <motion.div
@@ -54,7 +61,8 @@ const QuoteCard = ({
         </div>
 
         <button
-          onClick={() => setLiked(!liked)}
+          onClick={handleClick}
+          aria-label="즐겨찾기"
           className="p-1.5 rounded-full transition-all duration-300"
         >
           <Heart

@@ -1,73 +1,49 @@
-# Welcome to your Lovable project
+# Quote
 
-## Project info
+OCR로 책의 한 줄을 빠르게 기록하는 노트 앱.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+- iOS / Android 네이티브 앱 (Capacitor)
+- 웹 / PWA로도 동일하게 동작 (XR/AR 브라우저 호환 지향)
+- 오프라인 우선, 로그인 시 Supabase 자동 동기화
+- 코어 OCR: 네이티브에서는 Apple Vision / ML Kit, 웹에서는 Tesseract.js
 
-## How can I edit this code?
+## Tech
 
-There are several ways of editing your application.
+Vite · React · TypeScript · Tailwind · shadcn-ui · Capacitor · Supabase · IndexedDB(idb)
 
-**Use Lovable**
+## Quick start
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
+cp .env.example .env.local   # then fill in your VITE_SUPABASE_* values
+npm run dev                  # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+Apply the SQL migrations in `supabase/migrations/*.sql` on your Supabase project (SQL Editor or `supabase db push`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Build for phones
 
-**Use GitHub Codespaces**
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions. Short version:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run ios:add && npm run ios          # iOS (requires Xcode)
+npm run android:add && npm run android  # Android (requires Android Studio)
+```
 
-## What technologies are used for this project?
+## Project layout
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+src/
+  features/
+    auth/        Magic-link auth provider + sign-in page
+    ocr/         OcrService interface + native (ML Kit) and web (Tesseract.js) impls
+    capture/     CaptureFromImage workflow component
+  sync/          IndexedDB schema, repo, sync engine, hooks
+  pages/         Index / Capture / Library / Settings / SignIn / NotFound
+  lib/supabase.ts
+supabase/
+  migrations/    SQL schema + policies
+resources/       Master icon/splash sources for Capacitor assets
+public/icons/    PWA icons
+scripts/         Build helpers (e.g. iOS Info.plist patcher)
+```
