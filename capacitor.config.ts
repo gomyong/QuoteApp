@@ -5,7 +5,16 @@ const config: CapacitorConfig = {
   appName: "Quote",
   webDir: "dist",
   ios: {
-    contentInset: "always",
+    // `contentInset: "never"` makes WKWebView cover the *entire* physical
+    // screen (edge-to-edge), so there's no black strip below the bottom nav
+    // on devices with a home indicator. The price is that we have to handle
+    // safe areas ourselves in CSS via `env(safe-area-inset-*)` — which we
+    // already do on every page chrome (header/nav padding). Using "always"
+    // auto-insets the scrollview for safe areas, which (a) shrinks the
+    // webview so the home-indicator region shows through as the window
+    // background ("black strip"), and (b) makes `env(safe-area-inset-*)`
+    // report 0, collapsing our intentional top breathing room.
+    contentInset: "never",
     // NOTE: Do NOT set `scrollEnabled: false` here — that disables scrolling
     // *entirely*, not just the rubber-band bounce. The native-feel "no
     // bounce" behavior is handled by `overscroll-behavior: none` on the body
