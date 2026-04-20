@@ -53,5 +53,16 @@
 	<true/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>기록한 사진을 사진첩에 저장할 수 있도록 사용합니다.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.quote.note</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app.quote.note</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

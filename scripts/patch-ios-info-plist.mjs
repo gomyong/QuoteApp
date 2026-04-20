@@ -34,6 +34,25 @@ for (const [key, value] of Object.entries(REQUIRED)) {
   added += 1;
 }
 
+// URL Scheme registration — lets Supabase magic-link callbacks
+// (app.quote.note://...) bring the user back into the app. Keep idempotent.
+if (!xml.includes("<key>CFBundleURLTypes</key>")) {
+  const urlTypes = `\t<key>CFBundleURLTypes</key>
+\t<array>
+\t\t<dict>
+\t\t\t<key>CFBundleURLName</key>
+\t\t\t<string>app.quote.note</string>
+\t\t\t<key>CFBundleURLSchemes</key>
+\t\t\t<array>
+\t\t\t\t<string>app.quote.note</string>
+\t\t\t</array>
+\t\t</dict>
+\t</array>
+`;
+  xml = xml.replace(/<\/dict>\s*<\/plist>\s*$/m, `${urlTypes}</dict>\n</plist>\n`);
+  added += 1;
+}
+
 if (added === 0) {
   console.log("[patch-ios-info-plist] All required keys already present. No changes.");
 } else {

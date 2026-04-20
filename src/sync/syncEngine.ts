@@ -6,6 +6,60 @@ const BUCKET = "quote-images";
 
 let runningPromise: Promise<void> | null = null;
 
+/**
+ * Observable sync status for the UI (Settings "sync panel").
+ * Pure in-memory — resets on app relaunch, which is fine since this is
+ * diagnostic info, not durable state.
+ */
+export type SyncStatus = {
+  phase: "idle" | "pushing" | "pulling" | "error";
+  lastSyncAt: string | null;
+  lastError: string | null;
+  pushed: number; // number of outbox entries successfully sent in last run
+  pulledQuotes: number;
+  pulledBooks: number;
+  pendingOutbox: number;
+  isOnline: boolean;
+  isAuthenticated: boolean;
+};
+
+const defaultStatus: SyncStatus = {
+  phase: "idle",
+  lastSyncAt: null,
+  lastError: null,
+  pushed: 0,
+  pulledQuotes: 0,
+  pulledBooks: 0,
+  pendingOutbox: 0,
+  isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
+  isAuthenticated: false,
+};
+
+let status: SyncStatus = defaultStatus;
+const listeners = new Set<(s: SyncStatus) => void>();
+
+const emit = (patch: Partial<SyncStatus>) => {
+  status = { ...status, ...patch };
+  for (const l of listeners) {
+    try {
+      l(status);
+    } catch (e) {
+      console.warn("[sync] listener threw", e);
+    }
+  }
+};
+
+export const getSyncStatus = (): SyncStatus => status;
+
+export const subscribeSyncStatus = (fn: (s: SyncStatus) => void): (() => void) => {
+  listeners.add(fn);
+  // Emit current immediately so subscribers can render.
+  fn(status);
+  return () => {
+    listeners.delete(fn);
+  };
+};
+
 const decodeBase64 = (b64: string): Uint8Array => {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
@@ -14,6 +68,32 @@ const decodeBase64 = (b64: string): Uint8Array => {
 };
 
 const isOnline = () => (typeof navigator !== "undefined" ? navigator.onLine : true);
+
+/**
+ * Supabase returns plain objects (e.g. PostgrestError) rather than Error
+ * instances, so `String(e)` yields useless "[object Object]". This extracts
+ * a human-readable string with all the useful fields.
+ */
+const describeError = (e: unknown): string => {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof o.message === "string") parts.push(o.message);
+    if (typeof o.code === "string") parts.push(`code=${o.code}`);
+    else if (typeof o.status === "number") parts.push(`status=${o.status}`);
+    if (typeof o.details === "string") parts.push(o.details);
+    if (typeof o.hint === "string") parts.push(`hint: ${o.hint}`);
+    if (parts.length > 0) return parts.join(" | ");
+    try {
+      return JSON.stringify(e);
+    } catch {
+      return "[object]";
+    }
+  }
+  return String(e);
+};
 
 const getCurrentUserId = async (): Promise<string | null> => {
   const { data } = await supabase.auth.getSession();
@@ -107,27 +187,56 @@ const applyOutboxEntry = async (entry: OutboxEntry, userId: string) => {
   }
 };
 
-const pushOutbox = async (userId: string): Promise<void> => {
-  const entries = await repo.listOutbox();
+/**
+ * Relative processing order per outbox op type. Lower numbers go first.
+ *
+ * `upsert_book` must precede `upsert_quote` because `quotes.book_id` has a
+ * foreign key to `books.id` on Supabase — sending a quote before its book
+ * is inserted results in an FK violation and a failed cycle. Within each
+ * tier we preserve the original insertion order so retries look natural.
+ */
+const OP_ORDER: Record<string, number> = {
+  upsert_book: 0,
+  upsert_quote: 1,
+  upload_image: 2,
+  delete_quote: 3,
+};
+
+const pushOutbox = async (userId: string): Promise<number> => {
+  const raw = await repo.listOutbox();
+  // Stable sort: (op tier, then insertion order via created_at).
+  const entries = [...raw].sort((a, b) => {
+    const da = OP_ORDER[a.op.type] ?? 99;
+    const db = OP_ORDER[b.op.type] ?? 99;
+    if (da !== db) return da - db;
+    return a.created_at.localeCompare(b.created_at);
+  });
+
+  console.info(`[sync] push: ${entries.length} outbox entr${entries.length === 1 ? "y" : "ies"}`);
+  let pushed = 0;
   for (const entry of entries) {
     try {
       await applyOutboxEntry(entry, userId);
       await repo.deleteOutbox(entry.id);
+      pushed += 1;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = describeError(e);
+      console.warn(`[sync] push failed (${entry.op.type}):`, msg, e);
       const next = { ...entry, attempts: entry.attempts + 1, last_error: msg };
       await repo.putOutboxEntry(next);
       if (next.attempts >= 5) {
         console.warn("[sync] dropping entry after 5 attempts", next);
         await repo.deleteOutbox(entry.id);
       } else {
-        break;
+        // Stop at first failure so we don't amplify errors — retry next cycle.
+        throw new Error(`push halted after ${pushed} entries: ${msg}`);
       }
     }
   }
+  return pushed;
 };
 
-const pullChanges = async (userId: string): Promise<void> => {
+const pullChanges = async (userId: string): Promise<{ quotes: number; books: number }> => {
   const lastPulledAt = (await repo.getMeta("lastPulledAt")) ?? "1970-01-01T00:00:00.000Z";
 
   const { data: quotes, error: qErr } = await supabase
@@ -139,6 +248,7 @@ const pullChanges = async (userId: string): Promise<void> => {
     .limit(500);
   if (qErr) throw qErr;
 
+  let pulledQuotes = 0;
   for (const remote of quotes ?? []) {
     const local = await repo.getQuote(remote.id);
     if (!local || local.updated_at <= remote.updated_at) {
@@ -157,6 +267,7 @@ const pullChanges = async (userId: string): Promise<void> => {
         deleted_at: remote.deleted_at,
       };
       await repo.putQuote(merged);
+      pulledQuotes += 1;
     }
   }
 
@@ -169,6 +280,7 @@ const pullChanges = async (userId: string): Promise<void> => {
     .limit(500);
   if (bErr) throw bErr;
 
+  let pulledBooks = 0;
   for (const remote of books ?? []) {
     const local = (await repo.listBooks()).find((b) => b.id === remote.id);
     if (!local || local.updated_at <= remote.updated_at) {
@@ -182,24 +294,55 @@ const pullChanges = async (userId: string): Promise<void> => {
         created_at: remote.created_at,
         updated_at: remote.updated_at,
       });
+      pulledBooks += 1;
     }
   }
 
   await repo.setMeta("lastPulledAt", new Date().toISOString());
+  console.info(`[sync] pull: ${pulledQuotes} quote(s), ${pulledBooks} book(s)`);
+  return { quotes: pulledQuotes, books: pulledBooks };
 };
 
 export const syncOnce = async (): Promise<void> => {
   if (runningPromise) return runningPromise;
-  if (!isOnline()) return;
+
+  const online = isOnline();
+  emit({ isOnline: online });
+  if (!online) {
+    emit({ pendingOutbox: await repo.outboxSize() });
+    return;
+  }
+
   const userId = await getCurrentUserId();
-  if (!userId) return;
+  emit({ isAuthenticated: !!userId });
+  if (!userId) {
+    // Not signed in — record queue size so the user can see what'll get
+    // synced after they log in, but don't touch the network.
+    emit({ pendingOutbox: await repo.outboxSize() });
+    return;
+  }
 
   runningPromise = (async () => {
     try {
-      await pushOutbox(userId);
-      await pullChanges(userId);
+      emit({ phase: "pushing", lastError: null });
+      const pushed = await pushOutbox(userId);
+      emit({ phase: "pulling", pushed });
+      const { quotes: pq, books: pb } = await pullChanges(userId);
+      emit({
+        phase: "idle",
+        pulledQuotes: pq,
+        pulledBooks: pb,
+        pendingOutbox: await repo.outboxSize(),
+        lastSyncAt: new Date().toISOString(),
+      });
     } catch (e) {
-      console.warn("[sync] failed", e);
+      const msg = describeError(e);
+      console.warn("[sync] failed", msg, e);
+      emit({
+        phase: "error",
+        lastError: msg,
+        pendingOutbox: await repo.outboxSize(),
+      });
     } finally {
       runningPromise = null;
     }
@@ -207,3 +350,10 @@ export const syncOnce = async (): Promise<void> => {
 
   return runningPromise;
 };
+
+// Keep status.isOnline in sync with the browser signal even when no sync
+// is running, so the Settings panel reflects reality immediately.
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => emit({ isOnline: true }));
+  window.addEventListener("offline", () => emit({ isOnline: false }));
+}

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import DeepLinkHandler from "@/features/auth/DeepLinkHandler";
 import SyncMount from "@/components/SyncMount";
 import Index from "./pages/Index";
 import Capture from "./pages/Capture";
@@ -21,6 +22,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <DeepLinkHandler />
         <SyncMount />
         <HashRouter>
           <Routes>

@@ -520,22 +520,12 @@ export const repo = {
   async assignOwnerToLocalRecords(userId: string) {
     const db = await getDB();
     const tx = db.transaction(["quotes", "books"], "readwrite");
-    const quotes = await tx.objectStore("quotes").getAll();
-    for (const q of quotes) {
-      if (q.user_id === null) {
-        const updated = { ...q, user_id: userId, updated_at: nowIso() };
-        await tx.objectStore("quotes").put(updated);
-        // re-enqueue
-        const outboxTx = db.transaction("outbox", "readwrite");
-        await outboxTx.store.put({
-          id: uuid(),
-          op: { type: "upsert_quote", quoteId: q.id },
-          created_at: nowIso(),
-          attempts: 0,
-        });
-        await outboxTx.done;
-      }
-    }
+
+    // IMPORTANT: books must be enqueued BEFORE quotes, because quotes.book_id
+    // has an FK to books.id on Supabase. Pushing a quote whose book hasn't
+    // been synced yet causes a foreign-key violation and halts the cycle.
+    // (syncEngine also sorts by op type as a second line of defense, but
+    //  keeping the natural queue order correct is cheaper.)
     const books = await tx.objectStore("books").getAll();
     for (const b of books) {
       if (b.user_id === null) {
@@ -551,6 +541,23 @@ export const repo = {
         await outboxTx.done;
       }
     }
+
+    const quotes = await tx.objectStore("quotes").getAll();
+    for (const q of quotes) {
+      if (q.user_id === null) {
+        const updated = { ...q, user_id: userId, updated_at: nowIso() };
+        await tx.objectStore("quotes").put(updated);
+        const outboxTx = db.transaction("outbox", "readwrite");
+        await outboxTx.store.put({
+          id: uuid(),
+          op: { type: "upsert_quote", quoteId: q.id },
+          created_at: nowIso(),
+          attempts: 0,
+        });
+        await outboxTx.done;
+      }
+    }
+
     await tx.done;
   },
 };
