@@ -23,9 +23,19 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 800,
+      // Keep the native splash up until our JS explicitly dismisses it in
+      // src/main.tsx (the visible duration is capped there via MIN_VISIBLE_MS
+      // + fadeOutDuration). `launchShowDuration` is a *safety* timeout: if
+      // the web layer never calls hide() we still clear the splash after 3s
+      // so the user isn't stuck staring at the logo.
+      launchShowDuration: 3000,
+      launchAutoHide: false,
       backgroundColor: "#1C2431",
       showSpinner: false,
+      // Let the splash fade rather than snap-clear if the safety timeout
+      // does end up firing.
+      splashFullScreen: true,
+      splashImmersive: true,
     },
   },
 };
