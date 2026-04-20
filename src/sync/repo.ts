@@ -95,6 +95,94 @@ export const repo = {
     return db.getAll("books");
   },
 
+  async getBook(id: string): Promise<Book | undefined> {
+    const db = await getDB();
+    return db.get("books", id);
+  },
+
+  /**
+   * Update a book's cover (and optionally ISBN) and enqueue an outbox
+   * upsert so Supabase picks it up on the next sync.
+   */
+  async updateBookCover(
+    id: string,
+    coverUrl: string | null,
+    isbn?: string | null,
+  ): Promise<Book | null> {
+    const db = await getDB();
+    const b = await db.get("books", id);
+    if (!b) return null;
+    const updated: Book = {
+      ...b,
+      cover_url: coverUrl,
+      isbn: isbn !== undefined ? (isbn ?? null) : b.isbn,
+      updated_at: nowIso(),
+    };
+    await db.put("books", updated);
+    await enqueue({ op: { type: "upsert_book", bookId: id } });
+    return updated;
+  },
+
+  /**
+   * Books that have at least one non-deleted quote attached, annotated
+   * with `quoteCount` and `lastQuoteAt` so the library can sort shelves
+   * by most-recently-read. Books with zero live quotes are omitted so
+   * users aren't haunted by empty shelves after deleting everything.
+   */
+  async listBooksWithCounts(): Promise<
+    Array<Book & { quoteCount: number; lastQuoteAt: string }>
+  > {
+    const db = await getDB();
+    const [books, quotes] = await Promise.all([
+      db.getAll("books"),
+      db.getAll("quotes"),
+    ]);
+    const stats = new Map<string, { count: number; lastAt: string }>();
+    for (const q of quotes) {
+      if (q.deleted_at) continue;
+      if (!q.book_id) continue;
+      const cur = stats.get(q.book_id);
+      const at = q.updated_at ?? q.created_at;
+      if (!cur) stats.set(q.book_id, { count: 1, lastAt: at });
+      else {
+        cur.count += 1;
+        if (at > cur.lastAt) cur.lastAt = at;
+      }
+    }
+    const result: Array<Book & { quoteCount: number; lastQuoteAt: string }> = [];
+    for (const b of books) {
+      const s = stats.get(b.id);
+      if (!s) continue;
+      result.push({ ...b, quoteCount: s.count, lastQuoteAt: s.lastAt });
+    }
+    result.sort((a, b) => (a.lastQuoteAt < b.lastQuoteAt ? 1 : -1));
+    return result;
+  },
+
+  /** Quotes with no book_id (user saved a sentence without book info). */
+  async countUnassignedQuotes(): Promise<{ count: number; lastAt: string | null }> {
+    const db = await getDB();
+    const quotes = await db.getAll("quotes");
+    let count = 0;
+    let lastAt: string | null = null;
+    for (const q of quotes) {
+      if (q.deleted_at) continue;
+      if (q.book_id) continue;
+      count += 1;
+      const at = q.updated_at ?? q.created_at;
+      if (!lastAt || at > lastAt) lastAt = at;
+    }
+    return { count, lastAt };
+  },
+
+  async listQuotesByBook(bookId: string | null): Promise<Quote[]> {
+    const db = await getDB();
+    const all = await db.getAll("quotes");
+    return all
+      .filter((q) => !q.deleted_at && (q.book_id ?? null) === bookId)
+      .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
+  },
+
   async saveQuote(input: SaveQuoteInput, currentUserId: string | null): Promise<Quote> {
     const db = await getDB();
     const settings = await this.getSettings();

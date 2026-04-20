@@ -8,6 +8,7 @@ import SyncMount from "@/components/SyncMount";
 import Index from "./pages/Index";
 import Capture from "./pages/Capture";
 import Library from "./pages/Library";
+import BookDetail from "./pages/BookDetail";
 import SignIn from "./pages/SignIn";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/capture" element={<Capture />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/book/:bookId" element={<BookDetail />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

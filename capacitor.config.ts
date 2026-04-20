@@ -11,7 +11,12 @@ const config: CapacitorConfig = {
     // bounce" behavior is handled by `overscroll-behavior: none` on the body
     // (see src/index.css) and `touch-action: pan-y`, which keep normal
     // vertical scrolling intact while suppressing the horizontal bounce.
-    limitsNavigationsToAppBoundDomains: true,
+    //
+    // `limitsNavigationsToAppBoundDomains` was removed intentionally — when
+    // paired with a `WKAppBoundDomains` Info.plist entry it sandboxes the
+    // WebView to a tiny allowlist, which would block our Google Books cover
+    // lookups (https://www.googleapis.com/books/v1/volumes) and any future
+    // third-party APIs. Standard ATS still protects non-https traffic.
   },
   android: {
     allowMixedContent: false,

@@ -7,6 +7,7 @@ import type { PickedImage } from "@/features/ocr/pickImage";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
+import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 
 const Capture = () => {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ const Capture = () => {
     if (!content.trim() || saving) return;
     setSaving(true);
     try {
-      await repo.saveQuote(
+      const savedQuote = await repo.saveQuote(
         {
           content,
           thoughts,
@@ -39,6 +40,15 @@ const Capture = () => {
       lastImageRef.current = null;
       setSaved(true);
       void syncOnce();
+
+      // Fire-and-forget: pull a cover from Google Books for the linked book.
+      // Only touches the network when a *new* book was created (book_id set
+      // and cover still missing), so repeats are free.
+      if (savedQuote.book_id) {
+        void repo.getBook(savedQuote.book_id).then((b) => {
+          if (b) void ensureCoverForBook(b);
+        });
+      }
       setTimeout(() => {
         setSaved(false);
         setContent("");

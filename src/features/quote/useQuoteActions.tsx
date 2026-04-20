@@ -4,6 +4,7 @@ import EditQuoteSheet from "@/components/EditQuoteSheet";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
+import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 import type { Book, Quote } from "@/sync/types";
 
 type UseQuoteActionsOptions = {
@@ -66,7 +67,7 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
       if (!target) return;
       setSaving(true);
       try {
-        await repo.updateQuote(
+        const updated = await repo.updateQuote(
           target.id,
           {
             content: patch.content,
@@ -76,6 +77,13 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           user?.id ?? null,
         );
         void syncOnce();
+        // If editing attached a (possibly new) book, try to backfill its
+        // cover in the background — harmless if already covered.
+        if (updated?.book_id) {
+          void repo.getBook(updated.book_id).then((b) => {
+            if (b) void ensureCoverForBook(b);
+          });
+        }
         await onChanged?.();
       } finally {
         setSaving(false);
