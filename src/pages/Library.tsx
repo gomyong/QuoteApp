@@ -39,55 +39,62 @@ const Library = () => {
   }, [quotes, query, filter, bookById]);
 
   return (
-    <div className="min-h-screen bg-background safe-bottom">
-      <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <h1 className="text-foreground text-2xl font-semibold font-display">서재</h1>
-          <p className="text-muted-foreground text-sm mt-1">{quotes.length}개의 문장</p>
-        </motion.div>
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      {/* Fixed header + search + filters */}
+      <header className="flex-none bg-background/80 backdrop-blur-md">
+        <div className="max-w-lg mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-3">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4"
+          >
+            <h1 className="text-foreground text-2xl font-semibold font-display">서재</h1>
+            <p className="text-muted-foreground text-sm mt-1">{quotes.length}개의 문장</p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass rounded-xl flex items-center gap-3 px-4 py-3 mb-4"
-        >
-          <Search size={16} className="text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="문장, 책, 저자 검색..."
-            className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
-          />
-          <button className="p-1" aria-label="옵션">
-            <SlidersHorizontal size={14} className="text-muted-foreground" />
-          </button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="flex gap-2 mb-6"
-        >
-          {(["all", "favorites"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                filter === f ? "bg-accent text-accent-foreground" : "glass text-muted-foreground"
-              }`}
-            >
-              {f === "all" ? "전체" : "즐겨찾기"}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass rounded-xl flex items-center gap-3 px-4 py-3 mb-3"
+          >
+            <Search size={16} className="text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="문장, 책, 저자 검색..."
+              className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+            />
+            <button className="p-1" aria-label="옵션">
+              <SlidersHorizontal size={14} className="text-muted-foreground" />
             </button>
-          ))}
-        </motion.div>
+          </motion.div>
 
-        <div className="space-y-3">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="flex gap-2"
+          >
+            {(["all", "favorites"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  filter === f ? "bg-accent text-accent-foreground" : "glass text-muted-foreground"
+                }`}
+              >
+                {f === "all" ? "전체" : "즐겨찾기"}
+              </button>
+            ))}
+          </motion.div>
+        </div>
+      </header>
+
+      {/* Scrollable quote list */}
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-lg mx-auto px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+          <div className="space-y-3">
           {loading ? (
             <div className="text-center py-16 text-muted-foreground text-sm">불러오는 중...</div>
           ) : filtered.length > 0 ? (
@@ -120,8 +127,9 @@ const Library = () => {
               </p>
             </motion.div>
           )}
+          </div>
         </div>
-      </div>
+      </main>
 
       <BottomNav />
     </div>

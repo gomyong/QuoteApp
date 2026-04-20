@@ -52,22 +52,27 @@ const Capture = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-bottom">
-      <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-foreground text-2xl font-semibold font-display">
-            기록하기
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            한 줄의 영감을 남겨보세요
-          </p>
-        </motion.div>
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      {/* Fixed header (does not scroll) */}
+      <header className="flex-none bg-background/80 backdrop-blur-md">
+        <div className="max-w-lg mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-foreground text-2xl font-semibold font-display">
+              기록하기
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              한 줄의 영감을 남겨보세요
+            </p>
+          </motion.div>
+        </div>
+      </header>
 
+      {/* Scrollable content */}
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-lg mx-auto px-5 pt-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
         {/* Input Methods */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -175,7 +180,8 @@ const Capture = () => {
             )}
           </motion.button>
         </motion.div>
-      </div>
+        </div>
+      </main>
 
       {!showOcr && <BottomNav />}
 

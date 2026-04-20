@@ -32,18 +32,24 @@ const Index = () => {
   const featuredBook = featured?.book_id ? bookById.get(featured.book_id) : undefined;
 
   return (
-    <div className="min-h-screen bg-background safe-bottom">
-      <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <h2 className="text-muted-foreground text-sm font-medium">{greeting} ✦</h2>
-          <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">Quote</h1>
-        </motion.div>
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      {/* Fixed header */}
+      <header className="flex-none bg-background/80 backdrop-blur-md">
+        <div className="max-w-lg mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-muted-foreground text-sm font-medium">{greeting} ✦</h2>
+            <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">Quote</h1>
+          </motion.div>
+        </div>
+      </header>
 
+      {/* Scrollable content */}
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-lg mx-auto px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
         <div className="mb-8">
           {featured ? (
             <DailyQuote
@@ -95,7 +101,8 @@ const Index = () => {
             )}
           </div>
         </motion.div>
-      </div>
+        </div>
+      </main>
 
       <BottomNav />
     </div>

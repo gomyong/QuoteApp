@@ -24,7 +24,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-bottom flex items-center justify-center px-5">
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain flex items-center justify-center px-5 py-10">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

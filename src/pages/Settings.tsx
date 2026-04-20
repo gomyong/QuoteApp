@@ -35,16 +35,23 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-bottom">
-      <div className="max-w-lg mx-auto px-5 pt-12 pb-24">
-        <motion.h1
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-foreground text-2xl font-semibold font-display mb-6"
-        >
-          설정
-        </motion.h1>
+    <div className="h-dvh flex flex-col bg-background overflow-hidden">
+      {/* Fixed header */}
+      <header className="flex-none bg-background/80 backdrop-blur-md">
+        <div className="max-w-lg mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1rem)] pb-4">
+          <motion.h1
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-foreground text-2xl font-semibold font-display"
+          >
+            설정
+          </motion.h1>
+        </div>
+      </header>
 
+      {/* Scrollable sections */}
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="max-w-lg mx-auto px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
         <section className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-3 mb-3">
             <User size={16} className="text-accent" />
@@ -116,7 +123,8 @@ const Settings = () => {
             </button>
           </div>
         </section>
-      </div>
+        </div>
+      </main>
       <BottomNav />
     </div>
   );

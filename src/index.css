@@ -69,6 +69,14 @@
     touch-action: pan-y;
   }
 
+  /* Lock the page chrome so only inner <main> scrolls. Each route uses
+     `h-dvh flex flex-col overflow-hidden` with a scrollable <main>, so the
+     header/bottom nav never drift when dragging content. */
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Pretendard Variable', 'Pretendard', 'Inter', system-ui, sans-serif;
