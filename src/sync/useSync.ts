@@ -13,6 +13,28 @@ import { repo } from "./repo";
 export const useSync = () => {
   const { user } = useAuth();
 
+  // One-shot dedupe at app boot. This runs regardless of auth state because
+  // duplicates can accumulate in the local IndexedDB during offline use
+  // (same title typed with/without author → two book rows).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const removed = await repo.dedupeBooks();
+        if (!cancelled && removed > 0) {
+          // If we merged anything, trigger a sync so the merged quote
+          // records (now pointing at the winning book_id) propagate.
+          await syncOnce();
+        }
+      } catch (e) {
+        console.warn("[useSync] dedupeBooks failed", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const run = async () => {

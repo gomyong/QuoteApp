@@ -27,22 +27,99 @@ const enqueue = async (entry: Omit<OutboxEntry, "id" | "created_at" | "attempts"
   });
 };
 
+/**
+ * Normalized book title for dedupe comparisons.
+ *
+ * Collapses whitespace, strips decorative quotes / punctuation / the word
+ * "(개정판)" etc., and lowercases. Two titles that normalize to the same
+ * string are treated as the same book.
+ */
+const normalizeTitle = (title: string): string =>
+  title
+    .toLowerCase()
+    .replace(/[\u3000]/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/["'“”‘’·,.:;!?\-–—()\[\]{}]/g, "")
+    .trim();
+
+const normalizeAuthor = (author: string | null | undefined): string | null => {
+  const t = (author ?? "").trim();
+  return t ? t : null;
+};
+
+/**
+ * Find-or-create the book row for the given title/author.
+ *
+ * Dedup rules:
+ *  - Title normalization (see normalizeTitle) handles case/whitespace/
+ *    punctuation drift so "데미안", " 데미안 ", "데미안." all collapse.
+ *  - If the existing record has the same normalized title AND either
+ *    (a) both authors are empty, (b) one side is empty, or (c) authors
+ *    match after trim — we reuse it. When one side has the author and
+ *    the other doesn't, we *merge* (fill in the missing author so the
+ *    record is more complete).
+ *  - If both sides have an author and they differ, we treat it as a
+ *    genuinely different book (different edition / translator / same
+ *    title different work) and create a new row.
+ *
+ * The user_id guard used to split records across anon/logged-in states;
+ * we've removed it. If a book already exists under the null-owner and
+ * the user later signs in, assignOwnerToLocalRecords() will backfill
+ * user_id on that same row — we don't want another duplicate in the
+ * meantime.
+ */
 const upsertBookByTitle = async (
   title: string,
   author: string | null,
   userId: string | null,
 ): Promise<Book> => {
   const db = await getDB();
-  const all = await db.getAllFromIndex("books", "by_title");
-  const found = all.find(
-    (b) => b.title.trim() === title.trim() && (b.author ?? null) === (author ?? null) && !b.user_id === !userId,
-  );
-  if (found) return found;
+  const all = await db.getAll("books");
+  const normTitle = normalizeTitle(title);
+  const normAuthor = normalizeAuthor(author);
+
+  const candidates = all.filter((b) => normalizeTitle(b.title) === normTitle);
+  let found: Book | undefined;
+  if (candidates.length > 0) {
+    if (!normAuthor) {
+      // No incoming author — reuse any same-title record.
+      found = candidates[0];
+    } else {
+      // Prefer exact author match, else a same-title record with no author
+      // yet (we'll fill it in), else leave as undefined (different edition).
+      found =
+        candidates.find((b) => normalizeAuthor(b.author) === normAuthor) ??
+        candidates.find((b) => !normalizeAuthor(b.author));
+    }
+  }
+
+  if (found) {
+    // Opportunistic merge — fill in author if we now have one, or backfill
+    // user_id if the book was saved anonymously and we now know the owner.
+    let changed = false;
+    const merged: Book = { ...found };
+    if (!normalizeAuthor(merged.author) && normAuthor) {
+      merged.author = normAuthor;
+      changed = true;
+    }
+    if (merged.user_id === null && userId) {
+      merged.user_id = userId;
+      changed = true;
+    }
+    if (changed) {
+      merged.updated_at = nowIso();
+      await db.put("books", merged);
+      await enqueue({ op: { type: "upsert_book", bookId: merged.id } });
+      return merged;
+    }
+    return found;
+  }
+
   const book: Book = {
     id: uuid(),
     user_id: userId,
     title: title.trim(),
-    author: author?.trim() || null,
+    author: normAuthor,
     isbn: null,
     cover_url: null,
     created_at: nowIso(),
@@ -344,6 +421,99 @@ export const repo = {
   async deleteImage(id: string) {
     const db = await getDB();
     await db.delete("images", id);
+  },
+
+  /**
+   * One-shot local cleanup: merge book records that collapse to the same
+   * normalized title (see normalizeTitle) into a single "winner" row, and
+   * re-point any attached quotes at the winner. The winner is chosen as
+   * the book with the most complete metadata (cover > author > oldest
+   * created_at as tiebreaker).
+   *
+   * Quotes that were split across 3 duplicate "데미안" records will all
+   * end up under the same book_id after this runs.
+   *
+   * Safe to call multiple times — a pass with nothing to merge is a noop.
+   * Returns the number of duplicate book rows removed locally.
+   *
+   * NOTE: the losing books stay on Supabase until a future cleanup pass
+   *       (no `delete_book` op in the outbox yet). They'll just be
+   *       orphans server-side until then. Winners get their cover/author
+   *       upserted so the server copy stays in sync.
+   */
+  async dedupeBooks(): Promise<number> {
+    const db = await getDB();
+    const books = await db.getAll("books");
+    const quotes = await db.getAll("quotes");
+
+    const groups = new Map<string, Book[]>();
+    for (const b of books) {
+      const key = normalizeTitle(b.title);
+      if (!key) continue;
+      const arr = groups.get(key);
+      if (arr) arr.push(b);
+      else groups.set(key, [b]);
+    }
+
+    let removed = 0;
+    for (const [, group] of groups) {
+      if (group.length < 2) continue;
+      // Score each candidate. Higher is better.
+      const score = (b: Book): number =>
+        (b.cover_url ? 4 : 0) +
+        (b.author ? 2 : 0) +
+        (b.isbn ? 1 : 0) -
+        // Break ties toward the oldest record (stable, more sync history).
+        new Date(b.created_at).getTime() / 1e13;
+      group.sort((a, b) => score(b) - score(a));
+      const [winner, ...losers] = group;
+
+      // Merge useful fields from losers into the winner opportunistically.
+      let winnerChanged = false;
+      const nextWinner: Book = { ...winner };
+      for (const l of losers) {
+        if (!nextWinner.author && l.author) {
+          nextWinner.author = l.author;
+          winnerChanged = true;
+        }
+        if (!nextWinner.cover_url && l.cover_url) {
+          nextWinner.cover_url = l.cover_url;
+          winnerChanged = true;
+        }
+        if (!nextWinner.isbn && l.isbn) {
+          nextWinner.isbn = l.isbn;
+          winnerChanged = true;
+        }
+        if (nextWinner.user_id === null && l.user_id) {
+          nextWinner.user_id = l.user_id;
+          winnerChanged = true;
+        }
+      }
+      if (winnerChanged) {
+        nextWinner.updated_at = nowIso();
+        await db.put("books", nextWinner);
+        await enqueue({ op: { type: "upsert_book", bookId: nextWinner.id } });
+      }
+
+      // Repoint every quote that pointed at a loser to the winner.
+      const loserIds = new Set(losers.map((l) => l.id));
+      for (const q of quotes) {
+        if (q.book_id && loserIds.has(q.book_id)) {
+          const updated = { ...q, book_id: nextWinner.id, updated_at: nowIso() };
+          await db.put("quotes", updated);
+          await enqueue({ op: { type: "upsert_quote", quoteId: q.id } });
+        }
+      }
+
+      // Remove the losers locally.
+      for (const l of losers) {
+        await db.delete("books", l.id);
+        removed += 1;
+      }
+    }
+
+    if (removed > 0) console.info(`[repo.dedupeBooks] merged ${removed} duplicate book record(s)`);
+    return removed;
   },
 
   /** Backfill user_id on all locally-owned (null user_id) records. */

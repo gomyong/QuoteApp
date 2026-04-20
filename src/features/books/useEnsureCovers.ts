@@ -69,7 +69,13 @@ export const useEnsureCovers = (
       const result = await fetchBestCover(book.title, book.author, {
         signal: ac.signal,
       });
-      if (cancelled || !result) return;
+      if (cancelled) return;
+      if (!result) {
+        // Release the attempted lock so a future mount (e.g. reopening
+        // Library after adding more context like author) can retry.
+        attempted.delete(book.id);
+        return;
+      }
       await repo.updateBookCover(book.id, result.coverUrl, result.isbn);
       changed += 1;
     }).then(() => {
@@ -97,7 +103,10 @@ export const ensureCoverForBook = async (book: Book): Promise<boolean> => {
   if (attempted.has(book.id)) return false;
   attempted.add(book.id);
   const result = await fetchBestCover(book.title, book.author);
-  if (!result) return false;
+  if (!result) {
+    attempted.delete(book.id);
+    return false;
+  }
   await repo.updateBookCover(book.id, result.coverUrl, result.isbn);
   void syncOnce();
   return true;

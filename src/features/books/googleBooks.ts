@@ -139,10 +139,50 @@ const parseVolume = (
   };
 };
 
+const runQuery = async (
+  q: string,
+  title: string,
+  author: string | null,
+  maxResults: number,
+  signal?: AbortSignal,
+): Promise<BookCandidate[]> => {
+  const url = new URL(ENDPOINT);
+  url.searchParams.set("q", q);
+  url.searchParams.set("maxResults", String(maxResults));
+  url.searchParams.set("printType", "books");
+
+  try {
+    const res = await fetch(url.toString(), { signal });
+    if (!res.ok) {
+      console.warn("[googleBooks] non-200", res.status, "for q=", q);
+      return [];
+    }
+    const json = (await res.json()) as { items?: RawVolume[] };
+    const candidates = (json.items ?? [])
+      .map((v) => parseVolume(v, title, author))
+      .filter((x): x is BookCandidate => !!x);
+    candidates.sort((x, y) => y.score - x.score);
+    return candidates;
+  } catch (e) {
+    if ((e as { name?: string }).name === "AbortError") return [];
+    console.warn("[googleBooks] fetch failed for q=", q, e);
+    return [];
+  }
+};
+
 /**
  * Search Google Books for candidates matching the given title (+author).
- * Results are sorted by a simple relevance score (title similarity first).
- * Returns [] on any failure — network, offline, rate limit, etc.
+ *
+ * Strategy (two passes, first pass that produces candidates wins):
+ *   1) Strict field-qualified search: `intitle:"..." inauthor:"..."`.
+ *      This gives the most precise results for well-known titles.
+ *   2) Free-text fallback: `title author`. Korean publishers' metadata on
+ *      Google Books frequently uses slightly different punctuation / subtitle
+ *      formatting than what the user types, so the strict query returns 0
+ *      items; the free-text query usually still surfaces the book.
+ *
+ * Results are ranked by title similarity × author similarity × cover bonus.
+ * Returns [] on any network failure, abort, or zero hits.
  */
 export const searchBooks = async (
   title: string,
@@ -152,54 +192,65 @@ export const searchBooks = async (
   const t = title.trim();
   if (!t) return [];
   const a = author?.trim() || null;
+  const maxResults = opts.maxResults ?? 6;
 
-  // Build the query. Using `intitle:` / `inauthor:` gives much more
-  // relevant Korean results than a bare free-text search.
-  const parts: string[] = [`intitle:"${t.replace(/"/g, "")}"`];
-  if (a) parts.push(`inauthor:"${a.replace(/"/g, "")}"`);
-  const q = parts.join("+");
+  // Pass 1 — strict intitle/inauthor.
+  const strictParts: string[] = [`intitle:"${t.replace(/"/g, "")}"`];
+  if (a) strictParts.push(`inauthor:"${a.replace(/"/g, "")}"`);
+  let results = await runQuery(strictParts.join("+"), t, a, maxResults, opts.signal);
 
-  const url = new URL(ENDPOINT);
-  url.searchParams.set("q", q);
-  url.searchParams.set("maxResults", String(opts.maxResults ?? 5));
-  url.searchParams.set("printType", "books");
-  // Let Google pick the best language automatically; don't pin to ko.
-
-  try {
-    const res = await fetch(url.toString(), { signal: opts.signal });
-    if (!res.ok) {
-      console.warn("[googleBooks] non-200", res.status);
-      return [];
-    }
-    const json = (await res.json()) as { items?: RawVolume[] };
-    const candidates = (json.items ?? [])
-      .map((v) => parseVolume(v, t, a))
-      .filter((x): x is BookCandidate => !!x);
-    candidates.sort((x, y) => y.score - x.score);
-    return candidates;
-  } catch (e) {
-    if ((e as { name?: string }).name === "AbortError") return [];
-    console.warn("[googleBooks] fetch failed", e);
-    return [];
+  // Pass 2 — free-text fallback if strict returned nothing useful.
+  if (results.length === 0) {
+    const freeText = a ? `${t} ${a}` : t;
+    results = await runQuery(freeText, t, a, maxResults, opts.signal);
   }
+
+  return results;
 };
 
 /**
  * Convenience — fetch the best cover URL (or null) for a title/author pair.
- * Only returns a cover if the title similarity is at least `minScore`
- * (default 0.3) to avoid slapping random book covers on no-match results.
+ *
+ * Accepts a match when any of:
+ *   - similarity score >= minScore (default 0.25 — low enough for Korean
+ *     subtitle drift, high enough to reject unrelated books), or
+ *   - the normalized query title is a substring of the candidate's
+ *     normalized title (and vice versa). This catches cases like query
+ *     "데미안" vs Google's "데미안 (개정판)" where bigram similarity is
+ *     deceptively low but the match is obviously correct.
  */
 export const fetchBestCover = async (
   title: string,
   author?: string | null,
   opts: { minScore?: number; signal?: AbortSignal } = {},
 ): Promise<{ coverUrl: string; isbn: string | null } | null> => {
-  const minScore = opts.minScore ?? 0.3;
+  const minScore = opts.minScore ?? 0.25;
   const candidates = await searchBooks(title, author, {
-    maxResults: 5,
+    maxResults: 6,
     signal: opts.signal,
   });
-  const best = candidates.find((c) => c.coverUrl && c.score >= minScore);
-  if (!best || !best.coverUrl) return null;
+  if (candidates.length === 0) {
+    console.info(`[googleBooks] no candidates for "${title}"`);
+    return null;
+  }
+  const normQuery = normalize(title);
+  const isContained = (c: BookCandidate) => {
+    const normCand = normalize(c.title);
+    if (!normQuery || !normCand) return false;
+    return normCand.includes(normQuery) || normQuery.includes(normCand);
+  };
+  const best = candidates.find(
+    (c) => c.coverUrl && (c.score >= minScore || isContained(c)),
+  );
+  if (!best || !best.coverUrl) {
+    const top = candidates[0];
+    console.info(
+      `[googleBooks] no cover matched threshold for "${title}" (top: "${top?.title}" score=${top?.score.toFixed(2)}, hasCover=${!!top?.coverUrl})`,
+    );
+    return null;
+  }
+  console.info(
+    `[googleBooks] ✓ "${title}" → "${best.title}" score=${best.score.toFixed(2)}`,
+  );
   return { coverUrl: best.coverUrl, isbn: best.isbn };
 };
