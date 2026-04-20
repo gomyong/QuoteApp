@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
 
 type Props = {
   coverUrl?: string | null;
@@ -9,29 +8,33 @@ type Props = {
   rounded?: string;
   /** Optional className passthrough on the outer wrapper. */
   className?: string;
-};
-
-// Deterministic pastel gradient from a title — keeps the placeholder stable
-// so the same book always gets the same spine color.
-const hashHue = (s: string): number => {
-  let h = 0;
-  for (let i = 0; i < s.length; i += 1) {
-    h = (h << 5) - h + s.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h) % 360;
+  /**
+   * Tailwind text-* class for the placeholder title. Defaults to text-[11px]
+   * which is tuned for the small list-view thumbnails; bump this up when
+   * rendering larger covers on the detail hero.
+   */
+  placeholderTextClass?: string;
 };
 
 /**
- * Book cover with a graceful placeholder. Fills its parent; use with a
- * sized aspect-[2/3] container (the expected shape of a book spine).
+ * Book cover with a clean white placeholder fallback.
+ *
+ * When a `coverUrl` is available (and the image loads successfully) we show
+ * the real cover. Otherwise we render a minimal off-white card with the
+ * book's title (clamped) and author — readable at any tile size.
+ *
+ * Fills its parent; use with a sized aspect-[2/3] container.
  */
-const BookCover = ({ coverUrl, title, author, rounded = "rounded-xl", className }: Props) => {
+const BookCover = ({
+  coverUrl,
+  title,
+  author,
+  rounded = "rounded-xl",
+  className,
+  placeholderTextClass = "text-[11px]",
+}: Props) => {
   const [failed, setFailed] = useState(false);
   const hasImage = !!coverUrl && !failed;
-
-  const hue = hashHue(title || author || "quote");
-  const initial = (title || author || "?").trim().charAt(0);
 
   return (
     <div
@@ -52,21 +55,23 @@ const BookCover = ({ coverUrl, title, author, rounded = "rounded-xl", className 
           className="absolute inset-0 w-full h-full object-cover"
         />
       ) : (
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            background: `linear-gradient(145deg, hsl(${hue} 45% 28%) 0%, hsl(${(hue + 40) % 360} 35% 18%) 100%)`,
-          }}
-        >
-          <div className="flex flex-col items-center gap-2 px-2 text-center">
-            <BookOpen size={18} className="text-foreground/70" />
-            <span className="text-foreground/90 text-xl font-display font-semibold leading-none">
-              {initial.toUpperCase()}
-            </span>
+        <div className="absolute inset-0 bg-white flex flex-col justify-between p-2.5">
+          {/* Top-aligned title — clamp to a few lines so long titles still fit */}
+          <div
+            className={
+              "text-neutral-900 font-medium leading-tight font-display tracking-tight line-clamp-4 break-keep " +
+              placeholderTextClass
+            }
+          >
+            {title || "제목 없음"}
           </div>
-          {/* Subtle spine highlight */}
-          <div className="absolute inset-y-0 left-0 w-1.5 bg-black/25" />
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/5 via-transparent to-black/20" />
+          {author && (
+            <div className="text-neutral-500 text-[10px] leading-tight line-clamp-1 mt-1">
+              {author}
+            </div>
+          )}
+          {/* Thin spine accent on the left edge for a subtle book feel */}
+          <div className="absolute inset-y-0 left-0 w-[2px] bg-neutral-200" />
         </div>
       )}
     </div>

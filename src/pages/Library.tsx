@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import BookCover from "@/components/BookCover";
@@ -92,7 +92,7 @@ const Library = () => {
         </div>
       </header>
 
-      {/* Scrollable bookshelf */}
+      {/* Scrollable bookshelf (vertical card list) */}
       <main className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-lg mx-auto px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
           {loading ? (
@@ -112,15 +112,12 @@ const Library = () => {
               </p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+            <div className="space-y-3">
               {filtered.map((book, i) => (
-                <BookTile key={book.id} book={book} index={i} />
+                <BookRow key={book.id} book={book} index={i} />
               ))}
               {unassigned.count > 0 && !query.trim() && (
-                <UnassignedTile
-                  count={unassigned.count}
-                  index={filtered.length}
-                />
+                <UnassignedRow count={unassigned.count} index={filtered.length} />
               )}
             </div>
           )}
@@ -132,29 +129,36 @@ const Library = () => {
   );
 };
 
-type BookTileProps = { book: ShelfBook; index: number };
+type BookRowProps = { book: ShelfBook; index: number };
 
-const BookTile = ({ book, index }: BookTileProps) => (
+/**
+ * Horizontal book card — small cover on the left, metadata + chevron on the
+ * right. Matches the rhythm of the home's QuoteCard so the Library reads as
+ * a natural list instead of a grid.
+ */
+const BookRow = ({ book, index }: BookRowProps) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35, delay: index * 0.05, ease: "easeOut" }}
+    transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
   >
     <Link
       to={`/book/${book.id}`}
-      className="block active:scale-[0.98] transition-transform"
+      className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
       style={{ touchAction: "manipulation" }}
     >
-      <div className="aspect-[2/3] w-full">
+      <div className="w-14 shrink-0 aspect-[2/3]">
         <BookCover
           coverUrl={book.cover_url}
           title={book.title}
           author={book.author}
-          rounded="rounded-lg"
+          rounded="rounded-md"
           className="w-full h-full"
+          placeholderTextClass="text-[9px]"
         />
       </div>
-      <div className="mt-3">
+
+      <div className="flex-1 min-w-0">
         <div className="text-foreground text-sm font-medium line-clamp-2 leading-snug">
           {book.title}
         </div>
@@ -163,36 +167,38 @@ const BookTile = ({ book, index }: BookTileProps) => (
             {book.author}
           </div>
         )}
-        <div className="text-accent text-[11px] mt-1">문장 {book.quoteCount}개</div>
+        <div className="text-accent text-[11px] mt-1.5">문장 {book.quoteCount}개</div>
       </div>
+
+      <ChevronRight size={16} className="text-muted-foreground shrink-0" />
     </Link>
   </motion.div>
 );
 
-const UnassignedTile = ({ count, index }: { count: number; index: number }) => (
+const UnassignedRow = ({ count, index }: { count: number; index: number }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35, delay: index * 0.05, ease: "easeOut" }}
+    transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
   >
     <Link
       to={`/book/${UNASSIGNED_ID}`}
-      className="block active:scale-[0.98] transition-transform"
+      className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
       style={{ touchAction: "manipulation" }}
     >
-      <div className="aspect-[2/3] w-full rounded-lg border-2 border-dashed border-glass-border/50 bg-glass/20 flex items-center justify-center text-center px-3">
-        <div>
-          <div className="text-muted-foreground text-xs mb-1">📝</div>
-          <div className="text-foreground text-sm font-medium">미분류</div>
-          <div className="text-muted-foreground text-xs mt-1">
-            책 정보 없이 기록한 문장
-          </div>
-        </div>
+      <div className="w-14 shrink-0 aspect-[2/3] rounded-md border-2 border-dashed border-glass-border/50 bg-glass/20 flex items-center justify-center">
+        <span className="text-muted-foreground text-base">📝</span>
       </div>
-      <div className="mt-3">
+
+      <div className="flex-1 min-w-0">
         <div className="text-foreground text-sm font-medium">미분류</div>
-        <div className="text-accent text-[11px] mt-1">문장 {count}개</div>
+        <div className="text-muted-foreground text-xs mt-0.5">
+          책 정보 없이 기록한 문장
+        </div>
+        <div className="text-accent text-[11px] mt-1.5">문장 {count}개</div>
       </div>
+
+      <ChevronRight size={16} className="text-muted-foreground shrink-0" />
     </Link>
   </motion.div>
 );

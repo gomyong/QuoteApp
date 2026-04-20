@@ -111,6 +111,7 @@ const BookDetail = () => {
                   author={author}
                   rounded="rounded-lg"
                   className="w-full h-full"
+                  placeholderTextClass="text-sm"
                 />
               )}
             </div>
