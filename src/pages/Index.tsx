@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import DailyQuote from "@/components/DailyQuote";
 import QuoteCard from "@/components/QuoteCard";
@@ -7,6 +7,35 @@ import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
 import type { Book, Quote } from "@/sync/types";
 import { useQuoteActions } from "@/features/quote/useQuoteActions";
+
+/**
+ * Tiny deterministic PRNG seeded from a string (FNV-1a → mulberry32).
+ * Used so "오늘의 문장" stays the same for the whole day (keyed by
+ * YYYY-MM-DD) but rotates daily. No external dep.
+ */
+const seededIndex = (seed: string, length: number): number => {
+  if (length <= 0) return 0;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  // One mulberry32 step to spread consecutive seeds.
+  h = (h + 0x6d2b79f5) >>> 0;
+  let t = h;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  const rand = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return Math.floor(rand * length);
+};
+
+const todayKey = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 const Index = () => {
   const { quotes, refresh } = useQuotes();
@@ -34,8 +63,41 @@ const Index = () => {
   const greeting =
     hour < 12 ? "좋은 아침이에요" : hour < 18 ? "좋은 오후예요" : "좋은 저녁이에요";
 
-  const featured = recent[0];
+  // "오늘의 문장" — deterministic random over the whole quote library.
+  // `shuffleNonce` bumps when the user taps the shuffle icon so they can
+  // re-roll on demand. By default the selection is stable for the current
+  // calendar day (keyed by today's YYYY-MM-DD), so refreshing the home
+  // tab doesn't keep swapping the featured quote.
+  const [shuffleNonce, setShuffleNonce] = useState(0);
+
+  const featured = useMemo<Quote | undefined>(() => {
+    if (quotes.length === 0) return undefined;
+    if (shuffleNonce === 0) {
+      // Initial / day-stable pick
+      const idx = seededIndex(`daily:${todayKey()}:${quotes.length}`, quotes.length);
+      return quotes[idx];
+    }
+    // User-triggered shuffle: pick anything *other* than the current one
+    // when possible, so tapping shuffle always visibly changes the card.
+    const currentId =
+      quotes[seededIndex(`daily:${todayKey()}:${quotes.length}`, quotes.length)]?.id;
+    if (quotes.length === 1) return quotes[0];
+    for (let i = 0; i < 5; i += 1) {
+      const idx = seededIndex(
+        `shuffle:${shuffleNonce}:${i}:${quotes.length}`,
+        quotes.length,
+      );
+      if (quotes[idx].id !== currentId) return quotes[idx];
+    }
+    return quotes[seededIndex(`shuffle:${shuffleNonce}`, quotes.length)];
+  }, [quotes, shuffleNonce]);
+
   const featuredBook = featured?.book_id ? bookById.get(featured.book_id) : undefined;
+
+  const handleShuffle = useCallback(() => {
+    if (quotes.length < 2) return;
+    setShuffleNonce((n) => n + 1);
+  }, [quotes.length]);
 
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
@@ -62,6 +124,7 @@ const Index = () => {
               content={featured.content}
               bookTitle={featuredBook?.title}
               author={featuredBook?.author ?? undefined}
+              onShuffle={quotes.length > 1 ? handleShuffle : undefined}
             />
           ) : (
             <DailyQuote

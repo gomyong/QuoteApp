@@ -1,13 +1,18 @@
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Shuffle, Sparkles } from "lucide-react";
 
 interface DailyQuoteProps {
   content: string;
   bookTitle?: string;
   author?: string;
+  /**
+   * Called when the user taps the shuffle icon. Omit to hide the button
+   * (e.g. when there's only the default welcome message to show).
+   */
+  onShuffle?: () => void;
 }
 
-const DailyQuote = ({ content, bookTitle, author }: DailyQuoteProps) => {
+const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
@@ -20,16 +25,35 @@ const DailyQuote = ({ content, bookTitle, author }: DailyQuoteProps) => {
       <div className="absolute inset-0 bg-gradient-to-t from-accent/5 to-transparent" />
 
       <div className="relative p-7">
-        <div className="flex items-center gap-2 mb-5">
-          <Sparkles size={14} className="text-accent" />
-          <span className="text-accent text-xs font-medium tracking-wider uppercase">
-            오늘의 문장
-          </span>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-accent" />
+            <span className="text-accent text-xs font-medium tracking-wider uppercase">
+              오늘의 문장
+            </span>
+          </div>
+          {onShuffle && (
+            <button
+              type="button"
+              onClick={onShuffle}
+              aria-label="다른 문장 보기"
+              className="p-1.5 rounded-full text-muted-foreground hover:text-accent hover:bg-glass-border/20 active:scale-95 transition-all"
+              style={{ touchAction: "manipulation" }}
+            >
+              <Shuffle size={14} />
+            </button>
+          )}
         </div>
 
-        <p className="text-foreground text-lg leading-relaxed font-light">
+        <motion.p
+          key={content}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap"
+        >
           "{content}"
-        </p>
+        </motion.p>
 
         <div className="mt-6 flex items-center gap-2">
           <div className="w-6 h-px bg-accent/40" />
