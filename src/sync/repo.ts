@@ -143,6 +143,58 @@ export const repo = {
     return quote;
   },
 
+  /**
+   * Update an existing quote. Fields in `patch` overwrite the stored values;
+   * passing `book` attaches/replaces the book link (creating the book if
+   * needed), or sets it to null when explicitly `null`. Everything goes
+   * through the outbox so it syncs to Supabase on the next connection.
+   */
+  async updateQuote(
+    id: string,
+    patch: {
+      content?: string;
+      thoughts?: string | null;
+      page?: number | null;
+      is_favorite?: boolean;
+      book?: { title: string; author?: string | null } | null;
+    },
+    currentUserId: string | null,
+  ): Promise<Quote | null> {
+    const db = await getDB();
+    const q = await db.get("quotes", id);
+    if (!q) return null;
+
+    let book_id: string | null | undefined = undefined;
+    if (patch.book === null) {
+      book_id = null;
+    } else if (patch.book && patch.book.title.trim()) {
+      const book = await upsertBookByTitle(
+        patch.book.title,
+        patch.book.author ?? null,
+        currentUserId,
+      );
+      book_id = book.id;
+    }
+
+    const updated: Quote = {
+      ...q,
+      content: patch.content !== undefined ? patch.content.trim() : q.content,
+      thoughts:
+        patch.thoughts === undefined
+          ? q.thoughts
+          : patch.thoughts === null
+            ? null
+            : patch.thoughts.trim() || null,
+      page: patch.page !== undefined ? patch.page : q.page,
+      is_favorite: patch.is_favorite !== undefined ? patch.is_favorite : q.is_favorite,
+      book_id: book_id !== undefined ? book_id : q.book_id,
+      updated_at: nowIso(),
+    };
+    await db.put("quotes", updated);
+    await enqueue({ op: { type: "upsert_quote", quoteId: id } });
+    return updated;
+  },
+
   async toggleFavorite(id: string) {
     const db = await getDB();
     const q = await db.get("quotes", id);

@@ -5,7 +5,8 @@ import QuoteCard from "@/components/QuoteCard";
 import BottomNav from "@/components/BottomNav";
 import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
-import type { Book } from "@/sync/types";
+import type { Book, Quote } from "@/sync/types";
+import { useQuoteActions } from "@/features/quote/useQuoteActions";
 
 const Index = () => {
   const { quotes, refresh } = useQuotes();
@@ -22,6 +23,11 @@ const Index = () => {
   }, [books]);
 
   const recent = quotes.slice(0, 5);
+
+  const { requestActions, portal } = useQuoteActions({
+    getBook: (q: Quote) => (q.book_id ? bookById.get(q.book_id) : undefined),
+    onChanged: refresh,
+  });
 
   const now = new Date();
   const hour = now.getHours();
@@ -94,6 +100,7 @@ const Index = () => {
                       await repo.toggleFavorite(q.id);
                       refresh();
                     }}
+                    onLongPress={() => requestActions(q)}
                     index={i}
                   />
                 );
@@ -105,6 +112,7 @@ const Index = () => {
       </main>
 
       <BottomNav />
+      {portal}
     </div>
   );
 };

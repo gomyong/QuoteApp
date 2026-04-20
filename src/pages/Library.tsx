@@ -5,7 +5,8 @@ import QuoteCard from "@/components/QuoteCard";
 import BottomNav from "@/components/BottomNav";
 import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
-import type { Book } from "@/sync/types";
+import type { Book, Quote } from "@/sync/types";
+import { useQuoteActions } from "@/features/quote/useQuoteActions";
 
 const Library = () => {
   const { quotes, refresh, loading } = useQuotes();
@@ -22,6 +23,11 @@ const Library = () => {
     for (const b of books) map.set(b.id, b);
     return map;
   }, [books]);
+
+  const { requestActions, portal } = useQuoteActions({
+    getBook: (q: Quote) => (q.book_id ? bookById.get(q.book_id) : undefined),
+    onChanged: refresh,
+  });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,6 +118,7 @@ const Library = () => {
                     await repo.toggleFavorite(quote.id);
                     refresh();
                   }}
+                  onLongPress={() => requestActions(quote)}
                   index={i}
                 />
               );
@@ -132,6 +139,7 @@ const Library = () => {
       </main>
 
       <BottomNav />
+      {portal}
     </div>
   );
 };

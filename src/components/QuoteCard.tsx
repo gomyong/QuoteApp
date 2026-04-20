@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 
 interface QuoteCardProps {
   content: string;
@@ -11,9 +12,28 @@ interface QuoteCardProps {
   createdAt?: string;
   index?: number;
   onToggleFavorite?: () => void | Promise<void>;
+  /**
+   * Fired when the user long-presses the card (~500ms). Typically opens an
+   * action sheet offering "수정 / 삭제".
+   */
+  onLongPress?: () => void;
 }
 
 const CLAMP_LINES = 3;
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_TOLERANCE = 8; // px — cancel if finger slides too far
+
+// Fire a light iOS haptic tap on long-press start. Dynamically imported so
+// the web bundle doesn't pay for the plugin on non-native platforms.
+const hapticTick = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    await Haptics.impact({ style: ImpactStyle.Medium });
+  } catch {
+    /* plugin missing; ignore */
+  }
+};
 
 const QuoteCard = ({
   content,
@@ -23,13 +43,31 @@ const QuoteCard = ({
   isFavorite = false,
   index = 0,
   onToggleFavorite,
+  onLongPress,
 }: QuoteCardProps) => {
   const [liked, setLiked] = useState(isFavorite);
   useEffect(() => setLiked(isFavorite), [isFavorite]);
 
-  const handleHeartClick = () => {
+  const handleHeartClick = (e: React.MouseEvent) => {
+    if (longPressFired.current) {
+      // Cancel the click that fires after a long-press "gesture up".
+      longPressFired.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     setLiked((v) => !v);
     void onToggleFavorite?.();
+  };
+
+  const handleExpandClick = (e: React.MouseEvent) => {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    setExpanded((v) => !v);
   };
 
   // Detect whether the quote actually overflows 3 lines so we only show the
@@ -37,6 +75,58 @@ const QuoteCard = ({
   const measureRef = useRef<HTMLParagraphElement | null>(null);
   const [overflowed, setOverflowed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // --- Long-press detection -----------------------------------------------
+  const pressTimer = useRef<number | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+  const [pressed, setPressed] = useState(false);
+  // Set when long-press fires — we use this to swallow the subsequent click
+  // so the heart button or "펼쳐보기" toggle doesn't also trigger.
+  const longPressFired = useRef(false);
+
+  const clearPressTimer = () => {
+    if (pressTimer.current !== null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onLongPress) return;
+    // Only primary button / touch / pen
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    longPressFired.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    setPressed(true);
+    clearPressTimer();
+    pressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      setPressed(false);
+      void hapticTick();
+      onLongPress();
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pressStart.current) return;
+    const dx = e.clientX - pressStart.current.x;
+    const dy = e.clientY - pressStart.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE) {
+      clearPressTimer();
+      setPressed(false);
+      pressStart.current = null;
+    }
+  };
+
+  const handlePointerEnd = () => {
+    clearPressTimer();
+    setPressed(false);
+    pressStart.current = null;
+  };
+
+  useEffect(() => {
+    return () => clearPressTimer();
+  }, []);
 
   useLayoutEffect(() => {
     const el = measureRef.current;
@@ -59,9 +149,24 @@ const QuoteCard = ({
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: 1, y: 0, scale: pressed ? 0.98 : 1 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
-      className="glass rounded-2xl p-5 group relative overflow-hidden"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onPointerLeave={handlePointerEnd}
+      onContextMenu={(e) => {
+        // Prevent the iOS WebKit long-press callout (copy / share) from
+        // racing with our own long-press sheet.
+        if (onLongPress) e.preventDefault();
+      }}
+      style={{
+        touchAction: "pan-y",
+        WebkitTouchCallout: "none",
+        WebkitUserSelect: "none",
+      }}
+      className="glass rounded-2xl p-5 group relative overflow-hidden select-none"
     >
       {/* Subtle glow on hover */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-accent/5 to-transparent" />
@@ -96,7 +201,7 @@ const QuoteCard = ({
       {overflowed && (
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={handleExpandClick}
           aria-expanded={expanded}
           className="mt-2 inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80 active:scale-[0.98] transition-all relative z-10"
           style={{ touchAction: "manipulation" }}

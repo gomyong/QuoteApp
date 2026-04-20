@@ -1,0 +1,138 @@
+import { useCallback, useMemo, useState } from "react";
+import ActionSheet from "@/components/ActionSheet";
+import EditQuoteSheet from "@/components/EditQuoteSheet";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { repo } from "@/sync/repo";
+import { syncOnce } from "@/sync/syncEngine";
+import type { Book, Quote } from "@/sync/types";
+
+type UseQuoteActionsOptions = {
+  /** Look up the book for a given quote; used to pre-fill the edit sheet. */
+  getBook: (quote: Quote) => Book | undefined;
+  /** Called after a successful edit/delete so the caller can refetch. */
+  onChanged?: () => void | Promise<void>;
+};
+
+/**
+ * Wires the long-press → ActionSheet → EditQuoteSheet / delete-confirm flow.
+ *
+ * Usage:
+ *   const { requestActions, portal } = useQuoteActions({ getBook, onChanged });
+ *   ...
+ *   <QuoteCard onLongPress={() => requestActions(quote)} ... />
+ *   {portal}
+ */
+export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) => {
+  const { user } = useAuth();
+  const [target, setTarget] = useState<Quote | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const requestActions = useCallback((quote: Quote) => {
+    setTarget(quote);
+    setSheetOpen(true);
+  }, []);
+
+  const handleEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleAskDelete = useCallback(() => {
+    setConfirmOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!target) return;
+    setSaving(true);
+    try {
+      await repo.softDeleteQuote(target.id);
+      void syncOnce();
+      await onChanged?.();
+    } finally {
+      setSaving(false);
+      setConfirmOpen(false);
+      setTarget(null);
+    }
+  }, [target, onChanged]);
+
+  const handleSaveEdit = useCallback(
+    async (patch: {
+      content: string;
+      thoughts: string | null;
+      book: { title: string; author: string | null } | null;
+    }) => {
+      if (!target) return;
+      setSaving(true);
+      try {
+        await repo.updateQuote(
+          target.id,
+          {
+            content: patch.content,
+            thoughts: patch.thoughts,
+            book: patch.book,
+          },
+          user?.id ?? null,
+        );
+        void syncOnce();
+        await onChanged?.();
+      } finally {
+        setSaving(false);
+        setEditOpen(false);
+        setTarget(null);
+      }
+    },
+    [target, user?.id, onChanged],
+  );
+
+  const book = target ? (getBook(target) ?? null) : null;
+
+  const portal = useMemo(
+    () => (
+      <>
+        <ActionSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          title={target?.content ? `"${target.content.slice(0, 40)}${target.content.length > 40 ? "…" : ""}"` : undefined}
+          items={[
+            { id: "edit", label: "수정", onSelect: handleEdit },
+            { id: "delete", label: "삭제", destructive: true, onSelect: handleAskDelete },
+          ]}
+        />
+
+        <ActionSheet
+          open={confirmOpen}
+          onClose={() => {
+            setConfirmOpen(false);
+            setTarget(null);
+          }}
+          title="이 문장을 삭제할까요? 되돌릴 수 없어요."
+          items={[
+            {
+              id: "confirm-delete",
+              label: saving ? "삭제 중..." : "삭제",
+              destructive: true,
+              onSelect: () => void handleConfirmDelete(),
+            },
+          ]}
+        />
+
+        <EditQuoteSheet
+          open={editOpen}
+          quote={target}
+          book={book}
+          saving={saving}
+          onClose={() => {
+            setEditOpen(false);
+            setTarget(null);
+          }}
+          onSave={handleSaveEdit}
+        />
+      </>
+    ),
+    [sheetOpen, target, confirmOpen, saving, editOpen, book, handleEdit, handleAskDelete, handleConfirmDelete, handleSaveEdit],
+  );
+
+  return { requestActions, portal } as const;
+};
