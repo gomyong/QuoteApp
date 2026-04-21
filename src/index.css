@@ -1,5 +1,6 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -88,7 +89,24 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Pretendard Variable', 'Pretendard', 'Inter', system-ui, sans-serif;
+    /* Default stack: Korean-first (Pretendard handles Hangul best), with
+       Inter/Noto Sans JP downstream so mixed-script content still renders.
+       The `:lang()` rules below re-order the stack per selected UI locale
+       so the primary glyphs match the guide:
+         · ko → Pretendard
+         · en → Inter
+         · ja → Noto Sans JP */
+    font-family: 'Pretendard Variable', 'Pretendard', 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+  }
+
+  html:lang(ko) body {
+    font-family: 'Pretendard Variable', 'Pretendard', 'Inter', 'Noto Sans JP', system-ui, sans-serif;
+  }
+  html:lang(en) body {
+    font-family: 'Inter', 'Pretendard Variable', 'Noto Sans JP', system-ui, sans-serif;
+  }
+  html:lang(ja) body {
+    font-family: 'Noto Sans JP', 'Pretendard Variable', 'Inter', system-ui, sans-serif;
   }
 
   /* Allow text selection inside actual text content; disable on chrome. */

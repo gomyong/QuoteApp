@@ -112,6 +112,14 @@ export const ensureCoverForBook = async (book: Book): Promise<boolean> => {
   return true;
 };
 
+export type CoverRetryEntry = {
+  bookId: string;
+  title: string;
+  author: string | null;
+  /** True = Google Books returned a confident match, cover written. */
+  ok: boolean;
+};
+
 export type RetryCoversResult = {
   /** Total books in the library. */
   totalBooks: number;
@@ -123,8 +131,8 @@ export type RetryCoversResult = {
   updated: number;
   /** Tried but Google Books returned no confident match. */
   failed: number;
-  /** Per-book diagnostic lines, newest first. Useful for the UI log. */
-  log: string[];
+  /** Per-book outcomes, newest first — UI can format with i18n. */
+  entries: CoverRetryEntry[];
 };
 
 /**
@@ -150,23 +158,26 @@ export const retryMissingCovers = async (): Promise<RetryCoversResult> => {
     tried: withoutCover.length,
     updated: 0,
     failed: 0,
-    log: [],
+    entries: [],
   };
 
   if (withoutCover.length === 0) return result;
 
   await mapLimit(withoutCover, MAX_CONCURRENT, async (book) => {
     const r = await fetchBestCover(book.title, book.author);
+    const ok = !!r;
     if (r) {
       await repo.updateBookCover(book.id, r.coverUrl, r.isbn);
       result.updated += 1;
-      result.log.unshift(`✓ ${book.title} — 표지 매칭`);
     } else {
       result.failed += 1;
-      result.log.unshift(
-        `✗ ${book.title}${book.author ? ` / ${book.author}` : ""} — 매칭 실패`,
-      );
     }
+    result.entries.unshift({
+      bookId: book.id,
+      title: book.title,
+      author: book.author ?? null,
+      ok,
+    });
   });
 
   if (result.updated > 0) void syncOnce();

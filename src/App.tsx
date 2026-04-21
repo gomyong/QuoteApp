@@ -6,6 +6,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import DeepLinkHandler from "@/features/auth/DeepLinkHandler";
 import SyncMount from "@/components/SyncMount";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
 import Index from "./pages/Index";
 import Capture from "./pages/Capture";
 import Library from "./pages/Library";
@@ -21,21 +22,23 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthProvider>
-        <DeepLinkHandler />
-        <SyncMount />
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/capture" element={<Capture />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/book/:bookId" element={<BookDetail />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </HashRouter>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <DeepLinkHandler />
+          <SyncMount />
+          <HashRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/capture" element={<Capture />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/book/:bookId" element={<BookDetail />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </HashRouter>
+        </AuthProvider>
+      </LanguageProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -4,6 +4,7 @@ import {
   AlertCircle,
   BookMarked,
   CheckCircle2,
+  Globe,
   Image as ImageIcon,
   LogIn,
   LogOut,
@@ -25,22 +26,29 @@ import {
   syncOnce,
   type SyncStatus,
 } from "@/sync/syncEngine";
+import { useTranslation } from "@/i18n/LanguageProvider";
+import { LANGUAGES, type Language } from "@/i18n/config";
 
-const formatRelative = (iso: string | null): string => {
-  if (!iso) return "아직 없음";
-  const diffMs = Date.now() - new Date(iso).getTime();
-  if (diffMs < 10_000) return "방금 전";
-  const s = Math.round(diffMs / 1000);
-  if (s < 60) return `${s}초 전`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.round(h / 24);
-  return `${d}일 전`;
+/** Human-friendly "N minutes ago"-style formatting via i18n keys. */
+const useRelativeTime = () => {
+  const { t } = useTranslation();
+  return (iso: string | null): string => {
+    if (!iso) return t("time.never");
+    const diffMs = Date.now() - new Date(iso).getTime();
+    if (diffMs < 10_000) return t("time.just_now");
+    const s = Math.round(diffMs / 1000);
+    if (s < 60) return t("time.seconds_ago", { n: s });
+    const m = Math.round(s / 60);
+    if (m < 60) return t("time.minutes_ago", { n: m });
+    const h = Math.round(m / 60);
+    if (h < 24) return t("time.hours_ago", { n: h });
+    const d = Math.round(h / 24);
+    return t("time.days_ago", { n: d });
+  };
 };
 
 const Settings = () => {
+  const { t, lang, setLanguage } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [storeImages, setStoreImages] = useState(false);
@@ -48,6 +56,7 @@ const Settings = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
   const [coverBusy, setCoverBusy] = useState(false);
   const [coverResult, setCoverResult] = useState<RetryCoversResult | null>(null);
+  const formatRelative = useRelativeTime();
 
   useEffect(() => {
     (async () => {
@@ -90,7 +99,7 @@ const Settings = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-foreground text-2xl font-semibold font-display"
           >
-            설정
+            {t("settings.title")}
           </motion.h1>
         </div>
       </header>
@@ -101,7 +110,7 @@ const Settings = () => {
         <section className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center gap-3 mb-3">
             <User size={16} className="text-accent" />
-            <span className="text-sm text-foreground">계정</span>
+            <span className="text-sm text-foreground">{t("settings.account")}</span>
           </div>
           {user ? (
             <div className="flex items-center justify-between">
@@ -110,20 +119,51 @@ const Settings = () => {
                 onClick={signOut}
                 className="text-xs px-3 py-1 rounded-full border border-glass-border/30 hover:bg-glass-border/10 inline-flex items-center gap-1"
               >
-                <LogOut size={12} /> 로그아웃
+                <LogOut size={12} /> {t("settings.sign_out")}
               </button>
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">로그인하지 않음 (로컬 저장만)</span>
+              <span className="text-sm text-muted-foreground">{t("settings.not_signed_in")}</span>
               <button
                 onClick={() => navigate("/signin")}
                 className="text-xs px-3 py-1 rounded-full bg-accent text-accent-foreground inline-flex items-center gap-1"
               >
-                <LogIn size={12} /> 로그인
+                <LogIn size={12} /> {t("settings.sign_in")}
               </button>
             </div>
           )}
+        </section>
+
+        {/* --- Language picker --- */}
+        <section className="glass rounded-2xl p-4 mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Globe size={16} className="text-accent" />
+            <div>
+              <div className="text-sm text-foreground">{t("settings.language")}</div>
+              <div className="text-xs text-muted-foreground">
+                {t("settings.language_desc")}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {LANGUAGES.map((l) => {
+              const active = lang === l.code;
+              return (
+                <button
+                  key={l.code}
+                  onClick={() => void setLanguage(l.code as Language)}
+                  className={`text-xs py-2 rounded-xl transition-colors ${
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-glass-border/10 text-foreground hover:bg-glass-border/20"
+                  }`}
+                >
+                  {l.nativeLabel}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         <section className="glass rounded-2xl p-4 mb-4">
@@ -131,9 +171,9 @@ const Settings = () => {
             <div className="flex items-center gap-3">
               <ImageIcon size={16} className="text-accent" />
               <div>
-                <div className="text-sm text-foreground">원본 이미지 보관</div>
+                <div className="text-sm text-foreground">{t("settings.store_images")}</div>
                 <div className="text-xs text-muted-foreground">
-                  꺼두면 인식 후 원본은 저장하지 않아요
+                  {t("settings.store_images_desc")}
                 </div>
               </div>
             </div>
@@ -164,7 +204,7 @@ const Settings = () => {
               ) : (
                 <CheckCircle2 size={14} className="text-accent" />
               )}
-              <span className="text-sm text-foreground">동기화</span>
+              <span className="text-sm text-foreground">{t("settings.sync")}</span>
             </div>
             <button
               onClick={triggerSync}
@@ -179,38 +219,42 @@ const Settings = () => {
                     : ""
                 }
               />
-              지금 동기화
+              {t("settings.sync_now")}
             </button>
           </div>
 
           <dl className="text-xs text-muted-foreground space-y-1.5">
             <div className="flex justify-between">
-              <dt>네트워크</dt>
+              <dt>{t("settings.sync_network")}</dt>
               <dd className={syncStatus.isOnline ? "text-foreground" : "text-destructive"}>
-                {syncStatus.isOnline ? "온라인" : "오프라인"}
+                {syncStatus.isOnline
+                  ? t("settings.sync_online")
+                  : t("settings.sync_offline")}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt>로그인</dt>
+              <dt>{t("settings.sync_login")}</dt>
               <dd className={user ? "text-foreground" : "text-muted-foreground"}>
-                {user ? user.email : "없음 (로컬만)"}
+                {user ? user.email : t("settings.sync_login_none")}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt>마지막 동기화</dt>
+              <dt>{t("settings.sync_last")}</dt>
               <dd className="text-foreground">{formatRelative(syncStatus.lastSyncAt)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt>대기 중 업로드</dt>
-              <dd className="text-foreground">{syncStatus.pendingOutbox}건</dd>
+              <dt>{t("settings.sync_pending")}</dt>
+              <dd className="text-foreground">
+                {t("settings.sync_pending_count", { count: syncStatus.pendingOutbox })}
+              </dd>
             </div>
             {(syncStatus.pushed > 0 ||
               syncStatus.pulledQuotes > 0 ||
               syncStatus.pulledBooks > 0) && (
               <div className="flex justify-between">
-                <dt>최근 결과</dt>
+                <dt>{t("settings.sync_recent")}</dt>
                 <dd className="text-foreground">
-                  ↑{syncStatus.pushed} ↓문장{syncStatus.pulledQuotes} ↓책{syncStatus.pulledBooks}
+                  ↑{syncStatus.pushed} ↓{syncStatus.pulledQuotes} ↓{syncStatus.pulledBooks}
                 </dd>
               </div>
             )}
@@ -228,7 +272,7 @@ const Settings = () => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BookMarked size={14} className="text-accent" />
-              <span className="text-sm text-foreground">표지 자동 찾기 (Google Books)</span>
+              <span className="text-sm text-foreground">{t("settings.covers")}</span>
             </div>
             <button
               onClick={triggerCoverRetry}
@@ -236,59 +280,70 @@ const Settings = () => {
               className="text-xs px-3 py-1 rounded-full bg-accent text-accent-foreground inline-flex items-center gap-1 disabled:opacity-60"
             >
               <RefreshCw size={12} className={coverBusy ? "animate-spin" : ""} />
-              {coverBusy ? "찾는 중..." : "표지 다시 찾기"}
+              {coverBusy ? t("settings.covers_searching") : t("settings.covers_retry")}
             </button>
           </div>
 
           <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-            서재에 표지가 없는 책들을 Google Books에서 다시 검색해요.
-            인터넷 연결이 필요합니다.
+            {t("settings.covers_desc")}
           </p>
 
           {coverResult && (
             <dl className="text-xs text-muted-foreground space-y-1.5 pt-2 mt-2 border-t border-glass-border/20">
               <div className="flex justify-between">
-                <dt>총 책</dt>
-                <dd className="text-foreground">{coverResult.totalBooks}권</dd>
+                <dt>{t("settings.covers_total")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.totalBooks })}
+                </dd>
               </div>
               <div className="flex justify-between">
-                <dt>이미 표지 있음</dt>
-                <dd className="text-foreground">{coverResult.alreadyCovered}권</dd>
+                <dt>{t("settings.covers_already")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.alreadyCovered })}
+                </dd>
               </div>
               <div className="flex justify-between">
-                <dt>시도</dt>
-                <dd className="text-foreground">{coverResult.tried}권</dd>
+                <dt>{t("settings.covers_tried")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.tried })}
+                </dd>
               </div>
               <div className="flex justify-between">
-                <dt>성공 / 실패</dt>
+                <dt>{t("settings.covers_result")}</dt>
                 <dd className="text-foreground">
                   ↑{coverResult.updated} / ↓{coverResult.failed}
                 </dd>
               </div>
-              {coverResult.log.length > 0 && (
+              {coverResult.entries.length > 0 && (
                 <div className="pt-2 mt-2 border-t border-glass-border/20 space-y-0.5">
-                  {coverResult.log.slice(0, 12).map((line, i) => (
+                  {coverResult.entries.slice(0, 12).map((entry) => (
                     <div
-                      key={i}
+                      key={entry.bookId}
                       className={
-                        line.startsWith("✓")
+                        entry.ok
                           ? "text-foreground text-[11px] break-words"
                           : "text-muted-foreground text-[11px] break-words"
                       }
                     >
-                      {line}
+                      {entry.ok ? "✓" : "✗"} {entry.title}
+                      {entry.author ? ` / ${entry.author}` : ""} —{" "}
+                      {entry.ok
+                        ? t("settings.covers_match")
+                        : t("settings.covers_fail")}
                     </div>
                   ))}
-                  {coverResult.log.length > 12 && (
+                  {coverResult.entries.length > 12 && (
                     <div className="text-[11px] text-muted-foreground italic">
-                      ...외 {coverResult.log.length - 12}건
+                      {t("settings.covers_and_more", {
+                        count: coverResult.entries.length - 12,
+                      })}
                     </div>
                   )}
                 </div>
               )}
               {coverResult.totalBooks === 0 && (
                 <div className="pt-1 text-[11px] text-muted-foreground italic">
-                  서재에 아직 책이 없어요. 먼저 문장을 저장해 주세요.
+                  {t("settings.covers_no_books")}
                 </div>
               )}
             </dl>
