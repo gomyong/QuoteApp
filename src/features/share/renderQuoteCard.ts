@@ -9,7 +9,8 @@
  *
  * Visual spec follows the reference Einstein card:
  *   - Light off-white background
- *   - Large, slightly condensed body text, centered vertically
+ *   - Body text in a compact central band (narrow column, limited height),
+ *     light weight, centered vertically
  *   - "–Author" or "–Book · Author" in the lower-right corner
  *   - Large outer margins so Instagram crop-safe areas behave
  *
@@ -72,8 +73,8 @@ const ensureFontsReady = async (lang: Language, bodySize: number): Promise<void>
   // Kick off explicit loads for the sizes we'll actually paint. Browsers
   // short-circuit when the font is already in the cache.
   const tasks = [
-    document.fonts.load(`600 ${bodySize}px ${stack}`),
-    document.fonts.load(`500 ${Math.round(bodySize * 0.45)}px ${stack}`),
+    document.fonts.load(`300 ${bodySize}px ${stack}`),
+    document.fonts.load(`400 ${Math.round(bodySize * 0.45)}px ${stack}`),
   ];
   try {
     await Promise.race([
@@ -152,8 +153,8 @@ const fitBodyText = (
 ): { size: number; lines: string[]; lineHeight: number } => {
   let size = startSize;
   while (size >= minSize) {
-    ctx.font = `600 ${size}px ${stack}`;
-    const lineHeight = Math.round(size * 1.35);
+    ctx.font = `300 ${size}px ${stack}`;
+    const lineHeight = Math.round(size * 1.42);
     const lines = wrapLines(ctx, content, maxWidth);
     const totalHeight = lines.length * lineHeight;
     if (totalHeight <= maxHeight) {
@@ -163,9 +164,9 @@ const fitBodyText = (
   }
   // Min size: we still have to paint *something*. Re-measure at minSize
   // and let the caller truncate visually if it overflows.
-  ctx.font = `600 ${minSize}px ${stack}`;
+  ctx.font = `300 ${minSize}px ${stack}`;
   const lines = wrapLines(ctx, content, maxWidth);
-  return { size: minSize, lines, lineHeight: Math.round(minSize * 1.35) };
+  return { size: minSize, lines, lineHeight: Math.round(minSize * 1.42) };
 };
 
 /** Build the "– Author" / "– Book · Author" attribution string. */
@@ -202,14 +203,16 @@ export const renderQuoteCard = async (
   const FG = "#1B1B1B"; // ink
   const MUTED = "#5A5A5A"; // subdued byline grey
 
-  // Safe area + layout. The reference card puts the text well inside the
-  // visual frame so Instagram's UI overlays don't chew into it.
+  // Safe area: attribution uses the classic inset; body sits in a much
+  // smaller central rectangle so the quote reads as a small block of type.
   const margin = Math.round(width * 0.12);
+  const bodySideInsetRatio = 0.26; // ~48% of canvas width for body column
+  const bodyMaxHeightRatio = 0.34; // body block never exceeds ~34% of height
   const attributionBottom = Math.round(height * 0.12);
-  const attributionSize = Math.round(width * 0.03);
+  const attributionSize = Math.round(width * 0.028);
 
   // Load the fonts before we try to measure any text in them.
-  await ensureFontsReady(input.lang, Math.round(width * 0.07));
+  await ensureFontsReady(input.lang, Math.round(width * 0.052));
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -221,11 +224,11 @@ export const renderQuoteCard = async (
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, width, height);
 
-  // Body text
-  const contentMaxWidth = width - margin * 2;
-  const contentMaxHeight = height - margin * 2 - attributionBottom;
-  const startSize = Math.round(width * 0.075); // 1080 → ~81px
-  const minSize = Math.round(width * 0.035); // 1080 → ~38px
+  // Body text — narrow column + capped vertical band (smaller footprint).
+  const contentMaxWidth = Math.round(width * (1 - 2 * bodySideInsetRatio));
+  const contentMaxHeight = Math.round(height * bodyMaxHeightRatio);
+  const startSize = Math.round(width * 0.052); // 1080 → ~56px (starts smaller)
+  const minSize = Math.round(width * 0.026); // 1080 → ~28px floor
 
   const raw = input.content.trim();
   // Wrap content in quote marks to echo the reference card.
@@ -242,14 +245,13 @@ export const renderQuoteCard = async (
   );
 
   ctx.fillStyle = FG;
-  ctx.font = `600 ${bodySize}px ${stack}`;
+  ctx.font = `300 ${bodySize}px ${stack}`;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "center";
 
-  // Vertically center the block, biased slightly above the geometric
-  // center — matches the reference where the attribution sits lower.
+  // Vertically center the compact body block in the upper-middle band.
   const totalBodyHeight = lines.length * lineHeight;
-  const verticalBiasTop = Math.round(height * 0.42);
+  const verticalBiasTop = Math.round(height * 0.4);
   const firstBaseline = verticalBiasTop - totalBodyHeight / 2 + lineHeight;
 
   lines.forEach((line, i) => {
@@ -261,7 +263,7 @@ export const renderQuoteCard = async (
   const attribution = formatAttribution(input.bookTitle, input.author);
   if (attribution) {
     ctx.fillStyle = MUTED;
-    ctx.font = `500 ${attributionSize}px ${stack}`;
+    ctx.font = `400 ${attributionSize}px ${stack}`;
     ctx.textAlign = "right";
     ctx.fillText(attribution, width - margin, height - attributionBottom);
   }
