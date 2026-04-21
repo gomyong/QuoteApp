@@ -9,13 +9,12 @@
  *
  * Visual spec:
  *   - Light off-white background
- *   - Body text in an extra-light weight at a *fixed* size (~43px at
- *     1080px-wide outputs), so the glyph size is identical across quotes
- *     regardless of length — longer quotes simply wrap into more lines.
- *   - Narrow body column (~50% of canvas width) so the passage reads as
- *     a compact block of type.
- *   - "– Author" / "– Book · Author" in the lower-right corner, thinner
- *     than the body.
+ *   - Body text in ExtraLight (weight 200) at a *fixed* 42px at 1080-wide
+ *     outputs — glyph size is identical across quotes regardless of
+ *     length; longer quotes simply wrap into more lines.
+ *   - Narrow body column: 25% margin per side → ~50% canvas width.
+ *   - "– Author" / "– Book · Author" in the lower-right corner, Light
+ *     (weight 300), smaller than the body.
  *
  * The renderer is format-agnostic — callers pass a `ShareSize` describing
  * the target output; currently we ship 1080×1350 (4:5 post) and
@@ -49,70 +48,134 @@ export type RenderInput = {
 };
 
 /**
- * Font stack priority per language. Must exactly match what we use in the
- * stylesheet (`:lang()` rules in `src/index.css`) so the final rendered
- * glyphs match what the user previewed on screen.
+ * Share-card font stack.
+ *
+ * IMPORTANT: these family names are *different* from the ones the app UI
+ * uses in `src/index.css`. The app uses `"Pretendard Variable"` (variable
+ * axis via dynamic-subset), but Canvas in iOS WKWebView doesn't reliably
+ * trigger dynamic-subset glyph loads and often can't honor intermediate
+ * variable weights — it ends up falling back to a system font at Regular,
+ * which is exactly the "too thick / too big" look we saw in QA.
+ *
+ * For the share card we therefore point at dedicated, discrete weight-200
+ * font files loaded under share-only family names (`"Pretendard"` static
+ * + Google Fonts discrete `"Inter"` / `"Noto Sans JP"` at weight 200).
+ * The app UI never references these family+weight combos, so system-level
+ * behavior is untouched.
  */
 const fontStackFor = (lang: Language): string => {
   switch (lang) {
     case "en":
-      return '"Inter", "Pretendard Variable", system-ui, sans-serif';
+      return '"Inter", "Pretendard", "Noto Sans JP", system-ui, sans-serif';
     case "ja":
-      return '"Noto Sans JP", "Pretendard Variable", "Inter", system-ui, sans-serif';
+      return '"Noto Sans JP", "Pretendard", "Inter", system-ui, sans-serif';
     case "ko":
     default:
-      return '"Pretendard Variable", "Pretendard", "Inter", "Noto Sans JP", system-ui, sans-serif';
+      return '"Pretendard", "Inter", "Noto Sans JP", system-ui, sans-serif';
   }
 };
 
 /**
- * On-demand stylesheet for the share-card-only weights we need
- * (ExtraLight 200 for Inter / Noto Sans JP). We deliberately do NOT
- * ship these weights in `src/index.css`, because that would pull them
- * into the main app's font payload even though the app's UI never uses
- * them. Instead we inject a `<link rel="stylesheet">` the first time a
- * quote card is rendered; the browser caches it for subsequent shares.
+ * Inject (once) a <style> block that registers the exact font files the
+ * share card draws with. Kept entirely inside this module so the app's
+ * global CSS is untouched.
  *
- * Pretendard Variable already supports every weight via a single variable
- * font file, so no extra load is needed for Korean.
+ * - `Pretendard` (static, weight 200, ExtraLight): one .woff2 file from
+ *   the official Pretendard CDN — no unicode-range, no dynamic subset,
+ *   so Canvas can rasterize Korean glyphs reliably.
+ * - `Inter` / `Noto Sans JP` (weight 200): Google Fonts discrete weight
+ *   files pulled via an @import inside the same <style> block.
+ * - `Pretendard` / `Inter` / `Noto Sans JP` (weight 300) for attribution.
+ *   The app's `index.css` already loads Inter/Noto Sans JP 300 from Google
+ *   Fonts, but we re-request them here so we don't rely on the app having
+ *   loaded them first.
+ *
+ * `font-display: block` makes the browser wait briefly instead of flashing
+ * fallback glyphs — the Canvas draw only happens after `fonts.ready`
+ * resolves anyway.
  */
-const SHARE_FONTS_LINK_ID = "share-card-fonts";
+const SHARE_FONTS_STYLE_ID = "share-card-fonts";
 const injectShareFontsOnce = (): void => {
   if (typeof document === "undefined") return;
-  if (document.getElementById(SHARE_FONTS_LINK_ID)) return;
-  const link = document.createElement("link");
-  link.id = SHARE_FONTS_LINK_ID;
-  link.rel = "stylesheet";
-  // One request for both families, just the ExtraLight weight.
-  link.href =
-    "https://fonts.googleapis.com/css2?family=Inter:wght@200&family=Noto+Sans+JP:wght@200&display=swap";
-  document.head.appendChild(link);
+  if (document.getElementById(SHARE_FONTS_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = SHARE_FONTS_STYLE_ID;
+  style.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300&family=Noto+Sans+JP:wght@200;300&display=swap');
+    @font-face {
+      font-family: 'Pretendard';
+      font-weight: 200;
+      font-style: normal;
+      font-display: block;
+      src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/Pretendard-ExtraLight.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Pretendard';
+      font-weight: 300;
+      font-style: normal;
+      font-display: block;
+      src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/woff2/Pretendard-Light.woff2') format('woff2');
+    }
+  `;
+  document.head.appendChild(style);
 };
 
 /**
- * Wait for the body font + any of our webfonts we actually use in the
- * drawing to be loaded & ready. Without this the first share after a cold
- * load tends to render in a system fallback font.
+ * Make sure every glyph we're about to paint is actually available in the
+ * font cache before we touch the Canvas. Doing just `document.fonts.load`
+ * without a text argument tells the browser "some 200-weight version of
+ * this family" — which is enough to start the download but *not* enough to
+ * pull in language-specific subsets on CDNs that use unicode-range. We
+ * therefore pass the real text through both `fonts.load()` and a tiny
+ * hidden DOM node; the DOM render triggers the same font-resolution path
+ * the app UI uses, guaranteeing the glyphs are decoded by the time Canvas
+ * asks for them.
  */
-const ensureFontsReady = async (lang: Language, bodySize: number): Promise<void> => {
+const ensureFontsReady = async (
+  lang: Language,
+  bodySize: number,
+  bodyText: string,
+  attrText: string | null,
+): Promise<void> => {
   if (typeof document === "undefined" || !document.fonts) return;
   injectShareFontsOnce();
   const stack = fontStackFor(lang);
-  // Kick off explicit loads for the exact weights we'll actually paint
-  // (ExtraLight body, Light attribution). Browsers short-circuit when the
-  // font is already in the cache.
-  const tasks = [
-    document.fonts.load(`200 ${bodySize}px ${stack}`),
-    document.fonts.load(`300 ${Math.round(bodySize * 0.7)}px ${stack}`),
-  ];
+  const bodySpec = `200 ${bodySize}px ${stack}`;
+  const attrSpec = `300 ${Math.round(bodySize * 0.62)}px ${stack}`;
+
+  // DOM warmup — off-screen node forces the browser to resolve & decode
+  // the real glyphs for the exact characters we'll draw.
+  const warmup = document.createElement("div");
+  warmup.setAttribute("aria-hidden", "true");
+  warmup.style.cssText =
+    "position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;white-space:pre;";
+  const warmBody = document.createElement("div");
+  warmBody.style.font = bodySpec;
+  warmBody.textContent = bodyText;
+  warmup.appendChild(warmBody);
+  if (attrText) {
+    const warmAttr = document.createElement("div");
+    warmAttr.style.font = attrSpec;
+    warmAttr.textContent = attrText;
+    warmup.appendChild(warmAttr);
+  }
+  document.body.appendChild(warmup);
+  warmup.getBoundingClientRect(); // force layout
+
   try {
+    const tasks: Promise<unknown>[] = [
+      document.fonts.load(bodySpec, bodyText),
+    ];
+    if (attrText) tasks.push(document.fonts.load(attrSpec, attrText));
     await Promise.race([
       Promise.all(tasks),
-      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
     ]);
     await document.fonts.ready;
   } catch {
-    // best-effort — rendering still proceeds with whatever fallback
+    // best-effort — rendering still proceeds with whatever decoded
+  } finally {
+    warmup.remove();
   }
 };
 
@@ -218,27 +281,29 @@ export const renderQuoteCard = async (
   const FG = "#1B1B1B"; // ink
   const MUTED = "#5A5A5A"; // subdued byline grey
 
-  // Layout constants — everything is fixed (no auto-shrink).
+  // Layout constants — everything is fixed (no length-dependent shrinking).
   //
-  // Body column inset: 25% per side → ~50% column width at 1080 (540px).
-  //   (user-visible spec is 20–30% margins on each side)
-  // Body size: ~43px at 1080 wide outputs; scales proportionally if we
-  //   ever render to a different canvas width.
-  // Body weight: 200 (ExtraLight) — the thinnest weight we can reliably
-  //   serve across Pretendard / Inter / Noto Sans JP.
+  //   - Body column inset: 25% per side → ~50% column width at 1080 (540px).
+  //   - Body size: 42px at 1080-wide outputs; scales proportionally for
+  //     other canvas widths.
+  //   - Body weight: 200 (ExtraLight).
   const bodySideInsetRatio = 0.25;
-  const BODY_SIZE_PX_AT_1080 = 43;
+  const BODY_SIZE_PX_AT_1080 = 42;
   const bodySize = Math.round((width / 1080) * BODY_SIZE_PX_AT_1080);
   const BODY_WEIGHT = 200;
 
-  // Attribution — thinner than before (Light 300), right-aligned.
+  // Attribution — Light 300, right-aligned.
   const margin = Math.round(width * 0.12);
   const attributionBottom = Math.round(height * 0.12);
   const attributionSize = Math.round(width * 0.024); // ~26px at 1080
   const ATTR_WEIGHT = 300;
 
-  // Load the fonts before we try to measure any text in them.
-  await ensureFontsReady(input.lang, bodySize);
+  // Compose final text up-front so the font warmup can preload every glyph.
+  const raw = input.content.trim();
+  const body = `\u201C${raw}\u201D`;
+  const attribution = formatAttribution(input.bookTitle, input.author);
+
+  await ensureFontsReady(input.lang, bodySize, body, attribution);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -252,8 +317,6 @@ export const renderQuoteCard = async (
 
   // Body text
   const contentMaxWidth = Math.round(width * (1 - 2 * bodySideInsetRatio));
-  const raw = input.content.trim();
-  const body = `\u201C${raw}\u201D`;
 
   const { lines, lineHeight } = layoutBody(
     ctx,
@@ -281,7 +344,6 @@ export const renderQuoteCard = async (
   });
 
   // Attribution (right-aligned, lower-right corner)
-  const attribution = formatAttribution(input.bookTitle, input.author);
   if (attribution) {
     ctx.fillStyle = MUTED;
     ctx.font = `${ATTR_WEIGHT} ${attributionSize}px ${stack}`;
