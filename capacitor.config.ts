@@ -39,7 +39,7 @@ const config: CapacitorConfig = {
       // so the user isn't stuck staring at the logo.
       launchShowDuration: 3000,
       launchAutoHide: false,
-      backgroundColor: "#1C2431",
+      backgroundColor: "#F9F7F7",
       showSpinner: false,
       // Let the splash fade rather than snap-clear if the safety timeout
       // does end up firing.

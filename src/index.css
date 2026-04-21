@@ -7,51 +7,60 @@
 
 @layer base {
   :root {
-    /* Julive Deep Navy Theme */
-    --background: 220 25% 14%; /* #1C2431 */
-    --foreground: 220 10% 96%; /* #F4F5F6 */
+    /* Navy Mist palette test
+       — Background #F9F7F7 / Surface #DBE2EF / Text+Accent #112D4E.
+       DBE2EF is used as secondary surface (cards, borders, input fill) rather
+       than text, because #DBE2EF on #F9F7F7 fails contrast (~1.05:1). */
+    --background: 0 10% 97%;           /* #F9F7F7 */
+    --foreground: 213 64% 19%;         /* #112D4E */
 
-    --card: 220 25% 18%;
-    --card-foreground: 220 10% 96%;
+    --card: 0 10% 97%;
+    --card-foreground: 213 64% 19%;
 
-    --popover: 220 25% 16%;
-    --popover-foreground: 220 10% 96%;
+    --popover: 0 10% 97%;
+    --popover-foreground: 213 64% 19%;
 
-    --primary: 220 10% 96%; /* Off-white as primary */
-    --primary-foreground: 220 25% 14%;
+    --primary: 213 64% 19%;            /* #112D4E — primary CTA fill */
+    --primary-foreground: 0 10% 97%;
 
-    --secondary: 220 20% 22%;
-    --secondary-foreground: 220 10% 85%;
+    --secondary: 219 38% 90%;          /* #DBE2EF — soft blue-gray fill */
+    --secondary-foreground: 213 64% 19%;
 
-    --muted: 220 20% 20%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 219 38% 90%;
+    --muted-foreground: 213 25% 40%;   /* mid blue-gray, readable on #F9F7F7 */
 
-    --accent: 38 60% 65%; /* Warm gold accent */
-    --accent-foreground: 220 25% 10%;
+    /* Accent mirrors primary — the palette is intentionally monochromatic
+       around the navy, so CTA/hover/active all read as #112D4E against
+       either the off-white bg or the mist surface. */
+    --accent: 213 64% 19%;
+    --accent-foreground: 0 10% 97%;
 
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 10% 97%;
 
-    --border: 220 20% 25%;
-    --input: 220 20% 22%;
-    --ring: 38 60% 65%;
+    --border: 219 38% 90%;             /* #DBE2EF as a soft divider */
+    --input: 219 38% 90%;
+    --ring: 213 64% 19%;
 
     --radius: 1rem;
 
-    /* Custom Julive tokens */
-    --glass-bg: 220 25% 20%;
-    --glass-border: 220 20% 30%;
-    --glow-accent: 38 60% 65%;
-    --surface-elevated: 220 22% 24%;
+    /* Custom tokens — previously glass/navy. We keep the `.glass` utility
+       (bg-glass/40 + backdrop-blur) intact and retarget its fill to the
+       mist so the translucent layering still reads against the off-white
+       page. */
+    --glass-bg: 219 38% 90%;           /* #DBE2EF */
+    --glass-border: 213 30% 60%;       /* desaturated navy for hairlines */
+    --glow-accent: 213 64% 19%;
+    --surface-elevated: 219 38% 90%;
 
-    --sidebar-background: 220 25% 12%;
-    --sidebar-foreground: 220 10% 90%;
-    --sidebar-primary: 38 60% 65%;
-    --sidebar-primary-foreground: 220 25% 10%;
-    --sidebar-accent: 220 20% 20%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 220 20% 22%;
-    --sidebar-ring: 38 60% 65%;
+    --sidebar-background: 0 10% 97%;
+    --sidebar-foreground: 213 64% 19%;
+    --sidebar-primary: 213 64% 19%;
+    --sidebar-primary-foreground: 0 10% 97%;
+    --sidebar-accent: 219 38% 90%;
+    --sidebar-accent-foreground: 213 64% 19%;
+    --sidebar-border: 219 38% 90%;
+    --sidebar-ring: 213 64% 19%;
   }
 }
 
