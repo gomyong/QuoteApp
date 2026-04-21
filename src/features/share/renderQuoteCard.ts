@@ -66,12 +66,37 @@ const fontStackFor = (lang: Language): string => {
 };
 
 /**
+ * On-demand stylesheet for the share-card-only weights we need
+ * (ExtraLight 200 for Inter / Noto Sans JP). We deliberately do NOT
+ * ship these weights in `src/index.css`, because that would pull them
+ * into the main app's font payload even though the app's UI never uses
+ * them. Instead we inject a `<link rel="stylesheet">` the first time a
+ * quote card is rendered; the browser caches it for subsequent shares.
+ *
+ * Pretendard Variable already supports every weight via a single variable
+ * font file, so no extra load is needed for Korean.
+ */
+const SHARE_FONTS_LINK_ID = "share-card-fonts";
+const injectShareFontsOnce = (): void => {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(SHARE_FONTS_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = SHARE_FONTS_LINK_ID;
+  link.rel = "stylesheet";
+  // One request for both families, just the ExtraLight weight.
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Inter:wght@200&family=Noto+Sans+JP:wght@200&display=swap";
+  document.head.appendChild(link);
+};
+
+/**
  * Wait for the body font + any of our webfonts we actually use in the
  * drawing to be loaded & ready. Without this the first share after a cold
  * load tends to render in a system fallback font.
  */
 const ensureFontsReady = async (lang: Language, bodySize: number): Promise<void> => {
   if (typeof document === "undefined" || !document.fonts) return;
+  injectShareFontsOnce();
   const stack = fontStackFor(lang);
   // Kick off explicit loads for the exact weights we'll actually paint
   // (ExtraLight body, Light attribution). Browsers short-circuit when the
@@ -83,7 +108,7 @@ const ensureFontsReady = async (lang: Language, bodySize: number): Promise<void>
   try {
     await Promise.race([
       Promise.all(tasks),
-      new Promise<void>((resolve) => setTimeout(resolve, 1200)),
+      new Promise<void>((resolve) => setTimeout(resolve, 1500)),
     ]);
     await document.fonts.ready;
   } catch {
