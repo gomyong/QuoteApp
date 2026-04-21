@@ -7,12 +7,15 @@
  *     us predictable layout, native font rendering via `document.fonts`,
  *     and produces the same bytes on web and iOS.
  *
- * Visual spec follows the reference Einstein card:
+ * Visual spec:
  *   - Light off-white background
- *   - Body text in a compact central band (narrow column, limited height),
- *     light weight, centered vertically
- *   - "–Author" or "–Book · Author" in the lower-right corner
- *   - Large outer margins so Instagram crop-safe areas behave
+ *   - Body text in an extra-light weight at a *fixed* size (~43px at
+ *     1080px-wide outputs), so the glyph size is identical across quotes
+ *     regardless of length — longer quotes simply wrap into more lines.
+ *   - Narrow body column (~50% of canvas width) so the passage reads as
+ *     a compact block of type.
+ *   - "– Author" / "– Book · Author" in the lower-right corner, thinner
+ *     than the body.
  *
  * The renderer is format-agnostic — callers pass a `ShareSize` describing
  * the target output; currently we ship 1080×1350 (4:5 post) and
@@ -70,11 +73,12 @@ const fontStackFor = (lang: Language): string => {
 const ensureFontsReady = async (lang: Language, bodySize: number): Promise<void> => {
   if (typeof document === "undefined" || !document.fonts) return;
   const stack = fontStackFor(lang);
-  // Kick off explicit loads for the sizes we'll actually paint. Browsers
-  // short-circuit when the font is already in the cache.
+  // Kick off explicit loads for the exact weights we'll actually paint
+  // (ExtraLight body, Light attribution). Browsers short-circuit when the
+  // font is already in the cache.
   const tasks = [
-    document.fonts.load(`300 ${bodySize}px ${stack}`),
-    document.fonts.load(`400 ${Math.round(bodySize * 0.45)}px ${stack}`),
+    document.fonts.load(`200 ${bodySize}px ${stack}`),
+    document.fonts.load(`300 ${Math.round(bodySize * 0.7)}px ${stack}`),
   ];
   try {
     await Promise.race([
@@ -137,36 +141,22 @@ const wrapLines = (
 };
 
 /**
- * Iteratively shrink body font size until the wrapped content fits in
- * the available vertical budget. Keeps line-height proportional.
- *
- * Returns the chosen font size, lines and the line-height used.
+ * Lay out the body text at a **fixed** font size — no length-dependent
+ * shrinking. Long quotes simply wrap into more lines. Returns the lines
+ * along with the line-height we'll paint at.
  */
-const fitBodyText = (
+const layoutBody = (
   ctx: CanvasRenderingContext2D,
   content: string,
   stack: string,
   maxWidth: number,
-  maxHeight: number,
-  startSize: number,
-  minSize: number,
-): { size: number; lines: string[]; lineHeight: number } => {
-  let size = startSize;
-  while (size >= minSize) {
-    ctx.font = `300 ${size}px ${stack}`;
-    const lineHeight = Math.round(size * 1.42);
-    const lines = wrapLines(ctx, content, maxWidth);
-    const totalHeight = lines.length * lineHeight;
-    if (totalHeight <= maxHeight) {
-      return { size, lines, lineHeight };
-    }
-    size -= 4;
-  }
-  // Min size: we still have to paint *something*. Re-measure at minSize
-  // and let the caller truncate visually if it overflows.
-  ctx.font = `300 ${minSize}px ${stack}`;
+  size: number,
+  weight: number,
+): { lines: string[]; lineHeight: number } => {
+  ctx.font = `${weight} ${size}px ${stack}`;
+  const lineHeight = Math.round(size * 1.55);
   const lines = wrapLines(ctx, content, maxWidth);
-  return { size: minSize, lines, lineHeight: Math.round(minSize * 1.42) };
+  return { lines, lineHeight };
 };
 
 /** Build the "– Author" / "– Book · Author" attribution string. */
@@ -203,16 +193,27 @@ export const renderQuoteCard = async (
   const FG = "#1B1B1B"; // ink
   const MUTED = "#5A5A5A"; // subdued byline grey
 
-  // Safe area: attribution uses the classic inset; body sits in a much
-  // smaller central rectangle so the quote reads as a small block of type.
+  // Layout constants — everything is fixed (no auto-shrink).
+  //
+  // Body column inset: 25% per side → ~50% column width at 1080 (540px).
+  //   (user-visible spec is 20–30% margins on each side)
+  // Body size: ~43px at 1080 wide outputs; scales proportionally if we
+  //   ever render to a different canvas width.
+  // Body weight: 200 (ExtraLight) — the thinnest weight we can reliably
+  //   serve across Pretendard / Inter / Noto Sans JP.
+  const bodySideInsetRatio = 0.25;
+  const BODY_SIZE_PX_AT_1080 = 43;
+  const bodySize = Math.round((width / 1080) * BODY_SIZE_PX_AT_1080);
+  const BODY_WEIGHT = 200;
+
+  // Attribution — thinner than before (Light 300), right-aligned.
   const margin = Math.round(width * 0.12);
-  const bodySideInsetRatio = 0.26; // ~48% of canvas width for body column
-  const bodyMaxHeightRatio = 0.34; // body block never exceeds ~34% of height
   const attributionBottom = Math.round(height * 0.12);
-  const attributionSize = Math.round(width * 0.028);
+  const attributionSize = Math.round(width * 0.024); // ~26px at 1080
+  const ATTR_WEIGHT = 300;
 
   // Load the fonts before we try to measure any text in them.
-  await ensureFontsReady(input.lang, Math.round(width * 0.052));
+  await ensureFontsReady(input.lang, bodySize);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -224,34 +225,29 @@ export const renderQuoteCard = async (
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, width, height);
 
-  // Body text — narrow column + capped vertical band (smaller footprint).
+  // Body text
   const contentMaxWidth = Math.round(width * (1 - 2 * bodySideInsetRatio));
-  const contentMaxHeight = Math.round(height * bodyMaxHeightRatio);
-  const startSize = Math.round(width * 0.052); // 1080 → ~56px (starts smaller)
-  const minSize = Math.round(width * 0.026); // 1080 → ~28px floor
-
   const raw = input.content.trim();
-  // Wrap content in quote marks to echo the reference card.
   const body = `\u201C${raw}\u201D`;
 
-  const { size: bodySize, lines, lineHeight } = fitBodyText(
+  const { lines, lineHeight } = layoutBody(
     ctx,
     body,
     stack,
     contentMaxWidth,
-    contentMaxHeight,
-    startSize,
-    minSize,
+    bodySize,
+    BODY_WEIGHT,
   );
 
   ctx.fillStyle = FG;
-  ctx.font = `300 ${bodySize}px ${stack}`;
+  ctx.font = `${BODY_WEIGHT} ${bodySize}px ${stack}`;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "center";
 
-  // Vertically center the compact body block in the upper-middle band.
+  // Vertically center the block in the upper-middle of the canvas so it
+  // sits above the attribution with visual breathing room.
   const totalBodyHeight = lines.length * lineHeight;
-  const verticalBiasTop = Math.round(height * 0.4);
+  const verticalBiasTop = Math.round(height * 0.42);
   const firstBaseline = verticalBiasTop - totalBodyHeight / 2 + lineHeight;
 
   lines.forEach((line, i) => {
@@ -263,7 +259,7 @@ export const renderQuoteCard = async (
   const attribution = formatAttribution(input.bookTitle, input.author);
   if (attribution) {
     ctx.fillStyle = MUTED;
-    ctx.font = `400 ${attributionSize}px ${stack}`;
+    ctx.font = `${ATTR_WEIGHT} ${attributionSize}px ${stack}`;
     ctx.textAlign = "right";
     ctx.fillText(attribution, width - margin, height - attributionBottom);
   }
