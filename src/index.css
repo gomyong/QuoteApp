@@ -111,13 +111,7 @@
 
 @layer utilities {
   .glass {
-    /* Card shadow softened to ~70% of Tailwind's shadow-lg so cards feel
-       less "floaty" on the light palette. Kept as a two-layer shadow for
-       depth — just with lower alpha. */
-    @apply bg-glass/40 backdrop-blur-xl border border-glass-border/30;
-    box-shadow:
-      0 10px 15px -3px hsl(0 0% 0% / 0.07),
-      0 4px 6px -4px hsl(0 0% 0% / 0.07);
+    @apply bg-glass/40 backdrop-blur-xl border border-glass-border/30 shadow-lg;
   }
 
   .glass-subtle {

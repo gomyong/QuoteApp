@@ -39,7 +39,7 @@ const BookCover = ({
   return (
     <div
       className={
-        "relative overflow-hidden border border-glass-border/30 shadow-[0_8px_22px_-10px_rgba(0,0,0,0.38)] " +
+        "relative overflow-hidden border border-glass-border/30 shadow-[0_8px_22px_-10px_rgba(0,0,0,0.55)] " +
         rounded +
         (className ? " " + className : "")
       }
