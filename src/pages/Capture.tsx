@@ -8,8 +8,10 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
 import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 const Capture = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
@@ -71,10 +73,10 @@ const Capture = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-foreground text-2xl font-semibold font-display">
-              기록하기
+              {t("capture.title")}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              한 줄의 영감을 남겨보세요
+              {t("capture.subtitle")}
             </p>
           </motion.div>
         </div>
@@ -91,12 +93,12 @@ const Capture = () => {
           className="flex gap-3 mb-6"
         >
           {[
-            { icon: Camera, label: "사진", onClick: () => setShowOcr(true) },
-            { icon: Mic, label: "음성", onClick: () => undefined, disabled: true },
-            { icon: Type, label: "직접 입력", onClick: () => undefined },
-          ].map(({ icon: Icon, label, onClick, disabled }) => (
+            { icon: Camera, key: "photo", label: t("capture.from_photo"), onClick: () => setShowOcr(true) },
+            { icon: Mic, key: "voice", label: t("capture.from_voice"), onClick: () => undefined, disabled: true },
+            { icon: Type, key: "type", label: t("capture.type_directly"), onClick: () => undefined },
+          ].map(({ icon: Icon, key, label, onClick, disabled }) => (
             <button
-              key={label}
+              key={key}
               onClick={onClick}
               disabled={disabled}
               className="flex-1 glass rounded-xl py-3 flex flex-col items-center gap-1.5 hover:bg-glass-border/20 transition-colors active:scale-[0.98] disabled:opacity-50"
@@ -118,7 +120,7 @@ const Capture = () => {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="인상 깊은 문장을 입력하세요..."
+              placeholder={t("capture.quote_placeholder")}
               rows={4}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-base leading-relaxed resize-none focus:outline-none"
             />
@@ -128,18 +130,18 @@ const Capture = () => {
           <div className="glass rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-accent mb-1">
               <BookOpen size={14} />
-              <span className="text-xs font-medium">책 정보</span>
+              <span className="text-xs font-medium">{t("capture.book_info_label")}</span>
             </div>
             <input
               value={bookTitle}
               onChange={(e) => setBookTitle(e.target.value)}
-              placeholder="책 제목"
+              placeholder={t("capture.book_title_placeholder")}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none border-b border-border/30 pb-2"
             />
             <input
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              placeholder="저자"
+              placeholder={t("capture.book_author_placeholder")}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
             />
           </div>
@@ -148,12 +150,12 @@ const Capture = () => {
           <div className="glass rounded-2xl p-4">
             <div className="flex items-center gap-2 text-accent mb-2">
               <Tag size={14} />
-              <span className="text-xs font-medium">나의 생각</span>
+              <span className="text-xs font-medium">{t("capture.thought_label")}</span>
             </div>
             <textarea
               value={thoughts}
               onChange={(e) => setThoughts(e.target.value)}
-              placeholder="이 문장에 대한 생각을 자유롭게..."
+              placeholder={t("capture.thought_placeholder")}
               rows={2}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm leading-relaxed resize-none focus:outline-none"
             />
@@ -175,17 +177,17 @@ const Capture = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                ✓ 저장되었어요
+                ✓ {t("capture.saved")}
               </motion.span>
             ) : saving ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                <span>저장 중...</span>
+                <span>{t("capture.saving")}</span>
               </>
             ) : (
               <>
                 <Send size={16} />
-                <span>저장하기</span>
+                <span>{t("capture.save")}</span>
               </>
             )}
           </motion.button>

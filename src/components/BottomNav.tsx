@@ -1,23 +1,25 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, PlusCircle, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import { motion } from "framer-motion";
-
-const navItems = [
-  { path: "/", icon: Home, label: "홈" },
-  { path: "/capture", icon: PlusCircle, label: "기록" },
-  { path: "/library", icon: BookOpen, label: "서재" },
-  { path: "/settings", icon: SettingsIcon, label: "설정" },
-];
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const navItems = [
+    { path: "/", icon: Home, labelKey: "nav.home" as const },
+    { path: "/capture", icon: PlusCircle, labelKey: "nav.capture" as const },
+    { path: "/library", icon: BookOpen, labelKey: "nav.library" as const },
+    { path: "/settings", icon: SettingsIcon, labelKey: "nav.settings" as const },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
       <div className="glass-subtle border-t border-glass-border/20 px-6 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {navItems.map(({ path, icon: Icon, label }) => {
+          {navItems.map(({ path, icon: Icon, labelKey }) => {
             const isActive = location.pathname === path;
             return (
               <button
@@ -45,7 +47,7 @@ const BottomNav = () => {
                     isActive ? "text-accent" : "text-muted-foreground"
                   }`}
                 >
-                  {label}
+                  {t(labelKey)}
                 </span>
               </button>
             );

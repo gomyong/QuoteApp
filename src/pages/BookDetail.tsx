@@ -9,10 +9,12 @@ import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
 import type { Book, Quote } from "@/sync/types";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 const UNASSIGNED_ID = "__unassigned__";
 
 const BookDetail = () => {
+  const { t } = useTranslation();
   const { bookId } = useParams<{ bookId: string }>();
   const navigate = useNavigate();
   const { quotes } = useQuotes();
@@ -64,12 +66,12 @@ const BookDetail = () => {
     }
   }, [loading, isUnassigned, list.length, book, navigate]);
 
-  const title = isUnassigned ? "미분류" : (book?.title ?? "");
+  const title = isUnassigned ? t("library.unassigned_short") : (book?.title ?? "");
   const author = isUnassigned ? null : (book?.author ?? null);
 
   const subtitleCount = useMemo(() => {
-    return `문장 ${list.length}개`;
-  }, [list.length]);
+    return t("book.quote_count", { count: list.length });
+  }, [list.length, t]);
 
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
@@ -79,13 +81,13 @@ const BookDetail = () => {
           <div className="flex items-center gap-2 -ml-2">
             <Link
               to="/library"
-              aria-label="돌아가기"
+              aria-label={t("book.back_label")}
               className="p-2 rounded-full hover:bg-glass-border/20 active:scale-95"
               style={{ touchAction: "manipulation" }}
             >
               <ChevronLeft size={22} className="text-foreground" />
             </Link>
-            <span className="text-muted-foreground text-sm">서재</span>
+            <span className="text-muted-foreground text-sm">{t("book.back_to_library")}</span>
           </div>
         </div>
       </header>
@@ -117,7 +119,7 @@ const BookDetail = () => {
             </div>
             <div className="flex-1 min-w-0 pb-1">
               <h1 className="text-foreground text-xl font-semibold font-display leading-tight">
-                {title || "제목 없음"}
+                {title || t("book.unknown_title")}
               </h1>
               {author && (
                 <p className="text-muted-foreground text-sm mt-1">{author}</p>
@@ -129,11 +131,11 @@ const BookDetail = () => {
           {/* Quote list */}
           {loading ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              불러오는 중...
+              {t("common.loading")}
             </div>
           ) : list.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">
-              이 책의 문장이 아직 없어요
+              {t("book.empty_quotes")}
             </div>
           ) : (
             <div className="space-y-3">

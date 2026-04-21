@@ -7,6 +7,7 @@ import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
 import type { Book, Quote } from "@/sync/types";
 import { useQuoteActions } from "@/features/quote/useQuoteActions";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 /**
  * Tiny deterministic PRNG seeded from a string (FNV-1a → mulberry32).
@@ -38,6 +39,7 @@ const todayKey = () => {
 };
 
 const Index = () => {
+  const { t } = useTranslation();
   const { quotes, refresh } = useQuotes();
   const [books, setBooks] = useState<Book[]>([]);
 
@@ -61,7 +63,11 @@ const Index = () => {
   const now = new Date();
   const hour = now.getHours();
   const greeting =
-    hour < 12 ? "좋은 아침이에요" : hour < 18 ? "좋은 오후예요" : "좋은 저녁이에요";
+    hour < 12
+      ? t("home.greeting_morning")
+      : hour < 18
+      ? t("home.greeting_afternoon")
+      : t("home.greeting_evening");
 
   // "오늘의 문장" — deterministic random over the whole quote library.
   // `shuffleNonce` bumps when the user taps the shuffle icon so they can
@@ -110,7 +116,9 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <h2 className="text-muted-foreground text-sm font-medium">{greeting} ✦</h2>
-            <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">Quote</h1>
+            <h1 className="text-foreground text-2xl font-semibold mt-1 font-display">
+              {t("home.brand")}
+            </h1>
           </motion.div>
         </div>
       </header>
@@ -128,9 +136,9 @@ const Index = () => {
             />
           ) : (
             <DailyQuote
-              content="첫 문장을 기록해보세요. 카메라로 찍으면 자동으로 글자가 인식돼요."
-              bookTitle="환영합니다"
-              author="Quote"
+              content={t("home.welcome_content")}
+              bookTitle={t("home.welcome_book")}
+              author={t("home.brand")}
             />
           )}
         </div>
@@ -141,12 +149,12 @@ const Index = () => {
           transition={{ delay: 0.3 }}
         >
           <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase mb-4">
-            최근 기록
+            {t("home.recent_title")}
           </h3>
           <div className="space-y-3">
             {recent.length === 0 ? (
               <div className="glass rounded-2xl p-5 text-sm text-muted-foreground">
-                아직 기록이 없어요.
+                {t("home.empty")}
               </div>
             ) : (
               recent.map((q, i) => {

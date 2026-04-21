@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Shuffle, Sparkles } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface DailyQuoteProps {
   content: string;
@@ -13,6 +14,7 @@ interface DailyQuoteProps {
 }
 
 const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) => {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
@@ -29,14 +31,14 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-accent" />
             <span className="text-accent text-xs font-medium tracking-wider uppercase">
-              오늘의 문장
+              {t("home.daily_title")}
             </span>
           </div>
           {onShuffle && (
             <button
               type="button"
               onClick={onShuffle}
-              aria-label="다른 문장 보기"
+              aria-label={t("home.shuffle")}
               className="p-1.5 rounded-full text-muted-foreground hover:text-accent hover:bg-glass-border/20 active:scale-95 transition-all"
               style={{ touchAction: "manipulation" }}
             >

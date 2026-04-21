@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { BookOpen, Loader2, Save, Tag, X } from "lucide-react";
 import type { Quote, Book } from "@/sync/types";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type Props = {
   open: boolean;
@@ -23,6 +24,7 @@ type Props = {
  * the X button all close. All fields are pre-filled from the quote and book.
  */
 const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) => {
+  const { t } = useTranslation();
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -76,7 +78,7 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
             key="sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="문장 수정"
+            aria-label={t("edit.title")}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -91,12 +93,12 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
             {/* header */}
             <div className="px-5 py-3 flex items-center justify-between flex-none">
               <h2 className="text-foreground text-lg font-semibold font-display">
-                문장 수정
+                {t("edit.title")}
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="닫기"
+                aria-label={t("common.close")}
                 className="p-2 rounded-full hover:bg-glass-border/20"
                 style={{ touchAction: "manipulation" }}
               >
@@ -111,7 +113,7 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="인상 깊은 문장을 입력하세요..."
+                    placeholder={t("capture.quote_placeholder")}
                     rows={5}
                     className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-base leading-relaxed resize-none focus:outline-none"
                   />
@@ -120,18 +122,18 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                 <div className="glass rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-accent mb-1">
                     <BookOpen size={14} />
-                    <span className="text-xs font-medium">책 정보</span>
+                    <span className="text-xs font-medium">{t("capture.book_info_label")}</span>
                   </div>
                   <input
                     value={bookTitle}
                     onChange={(e) => setBookTitle(e.target.value)}
-                    placeholder="책 제목 (비우면 연결 해제)"
+                    placeholder={t("edit.book_title_placeholder")}
                     className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none border-b border-border/30 pb-2"
                   />
                   <input
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
-                    placeholder="저자"
+                    placeholder={t("capture.book_author_placeholder")}
                     className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
                   />
                 </div>
@@ -139,12 +141,12 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                 <div className="glass rounded-2xl p-4">
                   <div className="flex items-center gap-2 text-accent mb-2">
                     <Tag size={14} />
-                    <span className="text-xs font-medium">나의 생각</span>
+                    <span className="text-xs font-medium">{t("capture.thought_label")}</span>
                   </div>
                   <textarea
                     value={thoughts}
                     onChange={(e) => setThoughts(e.target.value)}
-                    placeholder="이 문장에 대한 생각을 자유롭게..."
+                    placeholder={t("capture.thought_placeholder")}
                     rows={3}
                     className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm leading-relaxed resize-none focus:outline-none"
                   />
@@ -165,12 +167,12 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                 {saving ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    <span>저장 중...</span>
+                    <span>{t("edit.saving")}</span>
                   </>
                 ) : (
                   <>
                     <Save size={16} />
-                    <span>저장</span>
+                    <span>{t("edit.save")}</span>
                   </>
                 )}
               </motion.button>

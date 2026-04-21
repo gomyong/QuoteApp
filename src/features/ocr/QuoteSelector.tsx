@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import { splitIntoSentences, type OcrResult } from "./OcrService";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type Props = {
   result: OcrResult;
@@ -8,6 +9,7 @@ type Props = {
 };
 
 const QuoteSelector = ({ result, onConfirm }: Props) => {
+  const { t } = useTranslation();
   const sentences = useMemo(() => splitIntoSentences(result.fullText), [result.fullText]);
   const [selected, setSelected] = useState<Set<number>>(() => new Set([0]));
 
@@ -37,11 +39,11 @@ const QuoteSelector = ({ result, onConfirm }: Props) => {
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-muted-foreground">기록할 문장을 탭하세요 (여러 개 선택 가능)</div>
+      <div className="text-xs text-muted-foreground">{t("capture.ocr_selector_hint")}</div>
 
       <div className="glass rounded-2xl p-3 max-h-72 overflow-y-auto space-y-2">
         {sentences.length === 0 ? (
-          <div className="text-sm text-muted-foreground p-3">인식된 문장이 없어요. 다시 촬영해 주세요.</div>
+          <div className="text-sm text-muted-foreground p-3">{t("capture.ocr_no_sentences")}</div>
         ) : (
           sentences.map((s, i) => {
             const isOn = selected.has(i);
@@ -76,7 +78,7 @@ const QuoteSelector = ({ result, onConfirm }: Props) => {
         disabled={!joined}
         className="w-full rounded-2xl py-3 bg-accent text-accent-foreground font-medium disabled:opacity-50"
       >
-        선택한 문장 사용하기
+        {t("capture.ocr_use_selected")}
       </button>
     </div>
   );

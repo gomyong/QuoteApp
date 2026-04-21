@@ -8,12 +8,14 @@ import { useQuotes } from "@/sync/useQuotes";
 import { repo } from "@/sync/repo";
 import type { Book } from "@/sync/types";
 import { useEnsureCovers } from "@/features/books/useEnsureCovers";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type ShelfBook = Book & { quoteCount: number; lastQuoteAt: string };
 
 const UNASSIGNED_ID = "__unassigned__";
 
 const Library = () => {
+  const { t } = useTranslation();
   // We still subscribe to quotes so the shelf auto-refreshes after a
   // save/delete even if the user never leaves this tab.
   const { quotes } = useQuotes();
@@ -67,11 +69,13 @@ const Library = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-4"
           >
-            <h1 className="text-foreground text-2xl font-semibold font-display">서재</h1>
+            <h1 className="text-foreground text-2xl font-semibold font-display">
+              {t("library.title")}
+            </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {totalBooks > 0
-                ? `${totalBooks}권 · 문장 ${totalQuotes}개`
-                : "아직 책이 없어요"}
+                ? t("library.count", { books: totalBooks, quotes: totalQuotes })
+                : t("library.empty")}
             </p>
           </motion.div>
 
@@ -85,7 +89,7 @@ const Library = () => {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="책 제목, 저자 검색..."
+              placeholder={t("library.search_placeholder")}
               className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
             />
           </motion.div>
@@ -97,7 +101,7 @@ const Library = () => {
         <div className="max-w-lg mx-auto px-5 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
           {loading ? (
             <div className="text-center py-16 text-muted-foreground text-sm">
-              불러오는 중...
+              {t("common.loading")}
             </div>
           ) : filtered.length === 0 && unassigned.count === 0 ? (
             <motion.div
@@ -107,8 +111,8 @@ const Library = () => {
             >
               <p className="text-muted-foreground text-sm">
                 {shelf.length === 0
-                  ? "첫 문장을 기록하면 책이 여기에 꽂혀요"
-                  : "검색 결과가 없어요"}
+                  ? t("library.empty_initial")
+                  : t("library.empty_search")}
               </p>
             </motion.div>
           ) : (
@@ -136,71 +140,83 @@ type BookRowProps = { book: ShelfBook; index: number };
  * right. Matches the rhythm of the home's QuoteCard so the Library reads as
  * a natural list instead of a grid.
  */
-const BookRow = ({ book, index }: BookRowProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
-  >
-    <Link
-      to={`/book/${book.id}`}
-      className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
-      style={{ touchAction: "manipulation" }}
+const BookRow = ({ book, index }: BookRowProps) => {
+  const { t } = useTranslation();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
     >
-      <div className="w-14 shrink-0 aspect-[2/3]">
-        <BookCover
-          coverUrl={book.cover_url}
-          title={book.title}
-          author={book.author}
-          rounded="rounded-md"
-          className="w-full h-full"
-          placeholderTextClass="text-[9px]"
-        />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="text-foreground text-sm font-medium line-clamp-2 leading-snug">
-          {book.title}
+      <Link
+        to={`/book/${book.id}`}
+        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
+        style={{ touchAction: "manipulation" }}
+      >
+        <div className="w-14 shrink-0 aspect-[2/3]">
+          <BookCover
+            coverUrl={book.cover_url}
+            title={book.title}
+            author={book.author}
+            rounded="rounded-md"
+            className="w-full h-full"
+            placeholderTextClass="text-[9px]"
+          />
         </div>
-        {book.author && (
-          <div className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
-            {book.author}
+
+        <div className="flex-1 min-w-0">
+          <div className="text-foreground text-sm font-medium line-clamp-2 leading-snug">
+            {book.title}
           </div>
-        )}
-        <div className="text-accent text-[11px] mt-1.5">문장 {book.quoteCount}개</div>
-      </div>
-
-      <ChevronRight size={16} className="text-muted-foreground shrink-0" />
-    </Link>
-  </motion.div>
-);
-
-const UnassignedRow = ({ count, index }: { count: number; index: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
-  >
-    <Link
-      to={`/book/${UNASSIGNED_ID}`}
-      className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
-      style={{ touchAction: "manipulation" }}
-    >
-      <div className="w-14 shrink-0 aspect-[2/3] rounded-md border-2 border-dashed border-glass-border/50 bg-glass/20 flex items-center justify-center">
-        <span className="text-muted-foreground text-base">📝</span>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="text-foreground text-sm font-medium">미분류</div>
-        <div className="text-muted-foreground text-xs mt-0.5">
-          책 정보 없이 기록한 문장
+          {book.author && (
+            <div className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
+              {book.author}
+            </div>
+          )}
+          <div className="text-accent text-[11px] mt-1.5">
+            {t("library.quote_count", { count: book.quoteCount })}
+          </div>
         </div>
-        <div className="text-accent text-[11px] mt-1.5">문장 {count}개</div>
-      </div>
 
-      <ChevronRight size={16} className="text-muted-foreground shrink-0" />
-    </Link>
-  </motion.div>
-);
+        <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+      </Link>
+    </motion.div>
+  );
+};
+
+const UnassignedRow = ({ count, index }: { count: number; index: number }) => {
+  const { t } = useTranslation();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.25), ease: "easeOut" }}
+    >
+      <Link
+        to={`/book/${UNASSIGNED_ID}`}
+        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
+        style={{ touchAction: "manipulation" }}
+      >
+        <div className="w-14 shrink-0 aspect-[2/3] rounded-md border-2 border-dashed border-glass-border/50 bg-glass/20 flex items-center justify-center">
+          <span className="text-muted-foreground text-base">📝</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="text-foreground text-sm font-medium">
+            {t("library.unassigned_short")}
+          </div>
+          <div className="text-muted-foreground text-xs mt-0.5">
+            {t("library.unassigned_desc")}
+          </div>
+          <div className="text-accent text-[11px] mt-1.5">
+            {t("library.quote_count", { count })}
+          </div>
+        </div>
+
+        <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+      </Link>
+    </motion.div>
+  );
+};
 
 export default Library;

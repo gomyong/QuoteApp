@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, Heart } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface QuoteCardProps {
   content: string;
@@ -45,6 +46,7 @@ const QuoteCard = ({
   onToggleFavorite,
   onLongPress,
 }: QuoteCardProps) => {
+  const { t } = useTranslation();
   const [liked, setLiked] = useState(isFavorite);
   useEffect(() => setLiked(isFavorite), [isFavorite]);
 
@@ -209,12 +211,12 @@ const QuoteCard = ({
           {expanded ? (
             <>
               <ChevronUp size={14} />
-              <span>접기</span>
+              <span>{t("quote.collapse")}</span>
             </>
           ) : (
             <>
               <ChevronDown size={14} />
-              <span>펼쳐보기</span>
+              <span>{t("quote.expand")}</span>
             </>
           )}
         </button>
@@ -239,7 +241,7 @@ const QuoteCard = ({
         <button
           type="button"
           onClick={handleHeartClick}
-          aria-label="즐겨찾기"
+          aria-label={t("quote.favorite")}
           className="p-1.5 rounded-full transition-all duration-300"
           style={{ touchAction: "manipulation" }}
         >

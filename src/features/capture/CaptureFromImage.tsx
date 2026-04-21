@@ -3,6 +3,7 @@ import { Camera, Image as ImageIcon, Loader2, RefreshCcw, X } from "lucide-react
 import { pickImage, type PickedImage } from "@/features/ocr/pickImage";
 import { useOcr } from "@/features/ocr/useOcr";
 import QuoteSelector from "@/features/ocr/QuoteSelector";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type Props = {
   onConfirm: (text: string, image?: PickedImage) => void;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
+  const { t } = useTranslation();
   const [image, setImage] = useState<PickedImage | null>(null);
   const ocr = useOcr();
 
@@ -33,11 +35,11 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
     >
       <div className="relative z-10 max-w-lg mx-auto px-5 pt-12 pb-24">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-foreground text-lg font-semibold">사진으로 기록</h2>
+          <h2 className="text-foreground text-lg font-semibold">{t("capture.ocr_title")}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t("common.close")}
             className="p-2 rounded-full hover:bg-glass-border/20 cursor-pointer"
             style={{ touchAction: "manipulation" }}
           >
@@ -54,7 +56,7 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
               style={{ touchAction: "manipulation" }}
             >
               <Camera size={22} className="text-accent" />
-              <span className="text-sm">카메라로 촬영</span>
+              <span className="text-sm">{t("capture.ocr_from_camera")}</span>
             </button>
             <button
               type="button"
@@ -63,7 +65,7 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
               style={{ touchAction: "manipulation" }}
             >
               <ImageIcon size={22} className="text-accent" />
-              <span className="text-sm">사진에서 선택</span>
+              <span className="text-sm">{t("capture.ocr_from_library")}</span>
             </button>
           </div>
         )}
@@ -71,30 +73,30 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
         {image && (
           <div className="space-y-4">
             <div className="relative rounded-2xl overflow-hidden glass">
-              <img src={image.dataUrl} alt="촬영한 이미지" className="w-full max-h-72 object-contain" />
+              <img src={image.dataUrl} alt="" className="w-full max-h-72 object-contain" />
               <button
                 onClick={retake}
                 className="absolute top-2 right-2 bg-background/80 text-foreground rounded-full px-3 py-1 text-xs flex items-center gap-1"
               >
-                <RefreshCcw size={12} /> 다시
+                <RefreshCcw size={12} /> {t("capture.ocr_retake")}
               </button>
             </div>
 
             {ocr.status === "running" && (
               <div className="glass rounded-2xl p-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 size={16} className="animate-spin text-accent" />
-                문장 인식 중…
+                {t("capture.ocr_recognizing")}
               </div>
             )}
 
             {ocr.status === "error" && (
               <div className="glass rounded-2xl p-4 text-sm text-destructive">
-                인식 실패: {ocr.error}
+                {t("capture.ocr_failed")}: {ocr.error}
                 <button
                   onClick={() => ocr.run(image.base64)}
                   className="ml-2 underline text-accent"
                 >
-                  다시 시도
+                  {t("capture.ocr_retry")}
                 </button>
               </div>
             )}

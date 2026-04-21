@@ -3,25 +3,36 @@ import { motion } from "framer-motion";
 import { ArrowLeft, KeyRound, Loader2, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type Step = "email" | "code";
 
-/** Humanize common Supabase auth error messages. */
-const prettyError = (raw: string): string => {
+/**
+ * Bucket raw Supabase auth errors into the handful of messages we actually
+ * want to surface. Kept here (rather than inline) so the classification is
+ * testable and language-agnostic — the caller maps the returned key to a
+ * translated string.
+ */
+type ErrorKey =
+  | "signin.error_rate_limit"
+  | "signin.error_expired"
+  | "signin.error_invalid_code"
+  | "signin.error_generic";
+
+const classifyError = (raw: string): ErrorKey => {
   const lc = raw.toLowerCase();
-  if (lc.includes("rate limit")) {
-    return "메일을 너무 자주 요청했어요. 잠시 후(약 1시간) 다시 시도해 주세요.";
-  }
+  if (lc.includes("rate limit")) return "signin.error_rate_limit";
   if (lc.includes("token has expired") || lc.includes("expired")) {
-    return "코드가 만료되었어요. 메일을 다시 요청해 주세요.";
+    return "signin.error_expired";
   }
   if (lc.includes("invalid") && (lc.includes("token") || lc.includes("otp"))) {
-    return "코드가 올바르지 않아요. 다시 확인해 주세요.";
+    return "signin.error_invalid_code";
   }
-  return raw;
+  return "signin.error_generic";
 };
 
 const SignIn = () => {
+  const { t } = useTranslation();
   const { signInWithMagicLink, verifyEmailOtp, user } = useAuth();
   const navigate = useNavigate();
 
@@ -29,7 +40,7 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "verifying" | "sent" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<ErrorKey | null>(null);
 
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -47,11 +58,11 @@ const SignIn = () => {
     e?.preventDefault();
     if (!email.trim()) return;
     setStatus("sending");
-    setErrorMsg(null);
+    setErrorKey(null);
     const { error } = await signInWithMagicLink(email.trim());
     if (error) {
       setStatus("error");
-      setErrorMsg(prettyError(error));
+      setErrorKey(classifyError(error));
     } else {
       setStatus("sent");
       setStep("code");
@@ -64,15 +75,15 @@ const SignIn = () => {
     const token = code.replace(/\D/g, "").slice(0, MAX_CODE_LEN);
     if (token.length < MIN_CODE_LEN) {
       setStatus("error");
-      setErrorMsg(`${MIN_CODE_LEN}~${MAX_CODE_LEN}자리 숫자 코드를 입력해 주세요.`);
+      setErrorKey("signin.error_invalid_code");
       return;
     }
     setStatus("verifying");
-    setErrorMsg(null);
+    setErrorKey(null);
     const { error } = await verifyEmailOtp(email.trim(), token);
     if (error) {
       setStatus("error");
-      setErrorMsg(prettyError(error));
+      setErrorKey(classifyError(error));
     } else {
       setStatus("idle");
       // onAuthStateChange will flip `user`, and the useEffect above navigates home.
@@ -86,16 +97,16 @@ const SignIn = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
-        <h1 className="text-foreground text-2xl font-semibold font-display">로그인</h1>
+        <h1 className="text-foreground text-2xl font-semibold font-display">
+          {t("signin.title")}
+        </h1>
         <p className="text-muted-foreground text-sm mt-1 mb-8">
-          {step === "email"
-            ? "이메일로 인증 코드 또는 매직 링크를 보내드릴게요"
-            : "메일에 담긴 숫자 코드를 입력하거나 메일 속 링크를 눌러주세요"}
+          {step === "email" ? t("signin.subtitle_email") : t("signin.subtitle_code")}
         </p>
 
         {user ? (
           <div className="glass rounded-2xl p-4 text-sm text-foreground">
-            이미 로그인되어 있어요: <span className="text-accent">{user.email}</span>
+            {t("signin.already_in")} <span className="text-accent">{user.email}</span>
           </div>
         ) : step === "email" ? (
           <form onSubmit={handleSend} className="space-y-4">
@@ -107,7 +118,7 @@ const SignIn = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t("signin.email_placeholder")}
                 className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
               />
             </div>
@@ -120,16 +131,16 @@ const SignIn = () => {
               {status === "sending" ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  보내는 중...
+                  {t("signin.sending")}
                 </>
               ) : (
-                <span>코드 / 링크 보내기</span>
+                <span>{t("signin.send_code")}</span>
               )}
             </button>
 
             {status === "error" && (
               <p className="text-xs text-destructive text-center">
-                {errorMsg ?? "잠시 후 다시 시도해 주세요."}
+                {t(errorKey ?? "signin.error_generic")}
               </p>
             )}
           </form>
@@ -148,7 +159,7 @@ const SignIn = () => {
                 onChange={(e) =>
                   setCode(e.target.value.replace(/\D/g, "").slice(0, MAX_CODE_LEN))
                 }
-                placeholder="인증 코드"
+                placeholder={t("signin.code_placeholder")}
                 className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-lg tracking-[0.3em] font-mono focus:outline-none"
               />
             </div>
@@ -161,10 +172,10 @@ const SignIn = () => {
               {status === "verifying" ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  확인하는 중...
+                  {t("signin.verifying")}
                 </>
               ) : (
-                <span>코드로 로그인</span>
+                <span>{t("signin.verify")}</span>
               )}
             </button>
 
@@ -175,11 +186,11 @@ const SignIn = () => {
                   setStep("email");
                   setCode("");
                   setStatus("idle");
-                  setErrorMsg(null);
+                  setErrorKey(null);
                 }}
                 className="inline-flex items-center gap-1 hover:text-foreground"
               >
-                <ArrowLeft size={12} /> 이메일 바꾸기
+                <ArrowLeft size={12} /> {t("signin.change_email")}
               </button>
               <button
                 type="button"
@@ -187,18 +198,18 @@ const SignIn = () => {
                 onClick={() => void handleSend()}
                 className="hover:text-foreground disabled:opacity-60"
               >
-                코드 다시 받기
+                {t("signin.resend")}
               </button>
             </div>
 
-            {status === "sent" && !errorMsg && (
+            {status === "sent" && !errorKey && (
               <p className="text-xs text-accent text-center">
-                메일함을 확인해 주세요. 링크를 눌러도 되고, 코드를 입력해도 됩니다.
+                {t("signin.code_sent")}
               </p>
             )}
             {status === "error" && (
               <p className="text-xs text-destructive text-center">
-                {errorMsg ?? "잠시 후 다시 시도해 주세요."}
+                {t(errorKey ?? "signin.error_generic")}
               </p>
             )}
           </form>

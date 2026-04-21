@@ -6,6 +6,7 @@ import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
 import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 import type { Book, Quote } from "@/sync/types";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type UseQuoteActionsOptions = {
   /** Look up the book for a given quote; used to pre-fill the edit sheet. */
@@ -24,6 +25,7 @@ type UseQuoteActionsOptions = {
  *   {portal}
  */
 export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [target, setTarget] = useState<Quote | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -104,8 +106,8 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           onClose={() => setSheetOpen(false)}
           title={target?.content ? `"${target.content.slice(0, 40)}${target.content.length > 40 ? "…" : ""}"` : undefined}
           items={[
-            { id: "edit", label: "수정", onSelect: handleEdit },
-            { id: "delete", label: "삭제", destructive: true, onSelect: handleAskDelete },
+            { id: "edit", label: t("quote.edit"), onSelect: handleEdit },
+            { id: "delete", label: t("quote.delete"), destructive: true, onSelect: handleAskDelete },
           ]}
         />
 
@@ -115,11 +117,11 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
             setConfirmOpen(false);
             setTarget(null);
           }}
-          title="이 문장을 삭제할까요? 되돌릴 수 없어요."
+          title={t("quote.delete_confirm_title")}
           items={[
             {
               id: "confirm-delete",
-              label: saving ? "삭제 중..." : "삭제",
+              label: saving ? t("quote.deleting") : t("quote.delete"),
               destructive: true,
               onSelect: () => void handleConfirmDelete(),
             },
@@ -139,7 +141,7 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
         />
       </>
     ),
-    [sheetOpen, target, confirmOpen, saving, editOpen, book, handleEdit, handleAskDelete, handleConfirmDelete, handleSaveEdit],
+    [sheetOpen, target, confirmOpen, saving, editOpen, book, handleEdit, handleAskDelete, handleConfirmDelete, handleSaveEdit, t],
   );
 
   return { requestActions, portal } as const;

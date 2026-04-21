@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 type Props = {
   coverUrl?: string | null;
@@ -33,8 +34,10 @@ const BookCover = ({
   className,
   placeholderTextClass = "text-[11px]",
 }: Props) => {
+  const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
   const hasImage = !!coverUrl && !failed;
+  const displayTitle = title || t("book.unknown_title");
 
   return (
     <div
@@ -47,7 +50,7 @@ const BookCover = ({
       {hasImage ? (
         <img
           src={coverUrl ?? undefined}
-          alt={`${title} 표지`}
+          alt={t("book.cover_alt", { title: displayTitle })}
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
@@ -63,7 +66,7 @@ const BookCover = ({
               placeholderTextClass
             }
           >
-            {title || "제목 없음"}
+            {displayTitle}
           </div>
           {author && (
             <div className="text-neutral-500 text-[10px] leading-tight line-clamp-1 mt-1">

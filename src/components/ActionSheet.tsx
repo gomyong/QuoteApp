@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export type ActionSheetItem = {
   id: string;
@@ -25,6 +26,7 @@ type Props = {
  *   parents (e.g. our page shells with `overflow:hidden`).
  */
 const ActionSheet = ({ open, title, items, onClose }: Props) => {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -52,7 +54,7 @@ const ActionSheet = ({ open, title, items, onClose }: Props) => {
             key="sheet"
             role="dialog"
             aria-modal="true"
-            aria-label={title ?? "동작 선택"}
+            aria-label={title ?? t("quote.action_default_title")}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -94,7 +96,7 @@ const ActionSheet = ({ open, title, items, onClose }: Props) => {
                 className="mt-2 w-full rounded-2xl py-4 text-base font-semibold bg-surface-elevated/90 backdrop-blur-xl border border-glass-border/30 text-foreground active:bg-glass-border/30"
                 style={{ touchAction: "manipulation" }}
               >
-                취소
+                {t("common.cancel")}
               </button>
             </div>
           </motion.div>
