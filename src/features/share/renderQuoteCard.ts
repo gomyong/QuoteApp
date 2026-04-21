@@ -13,8 +13,9 @@
  *     outputs — glyph size is identical across quotes regardless of
  *     length; longer quotes simply wrap into more lines.
  *   - Narrow body column: 25% margin per side → ~50% canvas width.
- *   - "– Author" / "– Book · Author" in the lower-right corner, Light
- *     (weight 300), smaller than the body.
+ *   - Book title (and author, if both exist) directly below the body,
+ *     centered, Light (weight 300), smaller than the body.
+ *   - Small, translucent logo watermark at bottom-center.
  *
  * The renderer is format-agnostic — callers pass a `ShareSize` describing
  * the target output; currently we ship 1080×1350 (4:5 post) and
@@ -247,16 +248,65 @@ const layoutBody = (
   return { lines, lineHeight };
 };
 
-/** Build the "– Author" / "– Book · Author" attribution string. */
-export const formatAttribution = (
+/**
+ * Build the centered byline shown directly under the quote.
+ *
+ * Formatting preference:
+ *   - Both: "{book title} · {author}"
+ *   - Book only: "{book title}"
+ *   - Author only: "{author}"
+ *   - Neither: null (no byline drawn)
+ *
+ * Uses a full-width middle dot (" · ") so it renders cleanly in Korean,
+ * Japanese, and Latin scripts alike.
+ */
+export const formatSubtitle = (
   bookTitle?: string | null,
   author?: string | null,
 ): string | null => {
   const b = bookTitle?.trim() || "";
   const a = author?.trim() || "";
   if (!b && !a) return null;
-  if (b && a) return `– ${a}, ${b}`;
-  return `– ${b || a}`;
+  if (b && a) return `${b} · ${a}`;
+  return b || a;
+};
+
+/**
+ * Load & cache the logo image used as a subtle watermark. Resolves to
+ * `null` if the fetch/decode fails — rendering still proceeds without a
+ * watermark rather than throwing.
+ *
+ * The icon lives at `./icons/icon-512.png` (from `public/icons/`), which
+ * Vite copies into the build output. We resolve the URL against
+ * `document.baseURI` so it works both on capacitor://localhost (iOS),
+ * http://localhost (Android) and plain web deployments.
+ */
+let cachedLogo: HTMLImageElement | null = null;
+const loadLogoOnce = async (): Promise<HTMLImageElement | null> => {
+  if (typeof document === "undefined") return null;
+  if (cachedLogo?.complete && cachedLogo.naturalWidth > 0) return cachedLogo;
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const url = new URL("./icons/icon-512.png", document.baseURI).href;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("logo load failed"));
+      img.src = url;
+    });
+    // `decode()` is advisory but makes the first `drawImage` non-blocking.
+    if (typeof img.decode === "function") {
+      try {
+        await img.decode();
+      } catch {
+        /* decode is best-effort */
+      }
+    }
+    cachedLogo = img;
+    return img;
+  } catch {
+    return null;
+  }
 };
 
 export type RenderedImage = {
@@ -292,18 +342,26 @@ export const renderQuoteCard = async (
   const bodySize = Math.round((width / 1080) * BODY_SIZE_PX_AT_1080);
   const BODY_WEIGHT = 200;
 
-  // Attribution — Light 300, right-aligned.
-  const margin = Math.round(width * 0.12);
-  const attributionBottom = Math.round(height * 0.12);
-  const attributionSize = Math.round(width * 0.024); // ~26px at 1080
-  const ATTR_WEIGHT = 300;
+  // Byline (book title · author), centered under the body.
+  const subtitleSize = Math.round(width * 0.026); // ~28px at 1080
+  const SUBTITLE_WEIGHT = 300;
+  const subtitleGap = Math.round(bodySize * 0.9); // breathing room below last body line
 
-  // Compose final text up-front so the font warmup can preload every glyph.
+  // Logo watermark at bottom-center.
+  const logoSize = Math.round(width * 0.045); // ~49px at 1080
+  const logoBottomMargin = Math.round(height * 0.055);
+  const logoOpacity = 0.28;
+
+  // Compose final text up-front so the font warmup can preload every glyph
+  // for both body and subtitle in one pass.
   const raw = input.content.trim();
   const body = `\u201C${raw}\u201D`;
-  const attribution = formatAttribution(input.bookTitle, input.author);
+  const subtitle = formatSubtitle(input.bookTitle, input.author);
 
-  await ensureFontsReady(input.lang, bodySize, body, attribution);
+  // Kick off logo load in parallel with font warmup — logo is a local
+  // asset on native, so this is essentially free.
+  const logoPromise = loadLogoOnce();
+  await ensureFontsReady(input.lang, bodySize, body, subtitle);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -332,23 +390,46 @@ export const renderQuoteCard = async (
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "center";
 
-  // Vertically center the block in the upper-middle of the canvas so it
-  // sits above the attribution with visual breathing room.
+  // Vertical composition:
+  //   block = body lines + (gap + subtitle?) — centered around ~45% height.
+  // We compute the block as a unit so adding/removing the subtitle
+  // doesn't shift the body off-center.
   const totalBodyHeight = lines.length * lineHeight;
-  const verticalBiasTop = Math.round(height * 0.42);
-  const firstBaseline = verticalBiasTop - totalBodyHeight / 2 + lineHeight;
+  const subtitleBlockHeight = subtitle ? subtitleGap + subtitleSize : 0;
+  const blockHeight = totalBodyHeight + subtitleBlockHeight;
+  const blockCenterY = Math.round(height * 0.45);
+  // First body baseline:
+  //   top of block = blockCenterY - blockHeight / 2
+  //   first baseline = top of block + lineHeight (since we measure from baseline)
+  const firstBaseline = blockCenterY - blockHeight / 2 + lineHeight;
 
   lines.forEach((line, i) => {
     if (!line) return;
     ctx.fillText(line, width / 2, firstBaseline + i * lineHeight);
   });
 
-  // Attribution (right-aligned, lower-right corner)
-  if (attribution) {
+  // Subtitle (book title · author), centered just below the body.
+  if (subtitle) {
+    const subtitleBaseline =
+      firstBaseline + (lines.length - 1) * lineHeight + subtitleGap + subtitleSize;
     ctx.fillStyle = MUTED;
-    ctx.font = `${ATTR_WEIGHT} ${attributionSize}px ${stack}`;
-    ctx.textAlign = "right";
-    ctx.fillText(attribution, width - margin, height - attributionBottom);
+    ctx.font = `${SUBTITLE_WEIGHT} ${subtitleSize}px ${stack}`;
+    ctx.textAlign = "center";
+    ctx.fillText(subtitle, width / 2, subtitleBaseline);
+  }
+
+  // Logo watermark (bottom-center, translucent). Any load failure is
+  // silently skipped so a missing/blocked asset can't break the share.
+  const logo = await logoPromise;
+  if (logo) {
+    const logoX = Math.round((width - logoSize) / 2);
+    const logoY = height - logoBottomMargin - logoSize;
+    ctx.save();
+    ctx.globalAlpha = logoOpacity;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+    ctx.restore();
   }
 
   const dataUrl = canvas.toDataURL("image/png");
