@@ -1,6 +1,6 @@
 # Quote — development work log
 
-Summary of work on the `julive-your-intelligent-aesthetic-note` repository, refocused as **Quote**. Last updated: **2026-04-19**.
+Summary of work on the `julive-your-intelligent-aesthetic-note` repository, refocused as **Quote**. Last updated: **2026-04-20**.
 
 ---
 
@@ -206,6 +206,74 @@ uses an offscreen measurement copy of the same paragraph plus `ResizeObserver`,
 so the affordance never appears for short quotes. Toggle animates with
 `AnimatePresence`. All buttons get `type="button"` + `touch-action:
 manipulation` for reliable WKWebView taps.
+
+---
+
+## PR10 — Internationalization (KO / EN / JA) + social share images
+
+### i18n infrastructure
+Added a minimal in-house i18n layer under `src/i18n/`:
+
+- `config.ts` — supported languages (`ko`, `en`, `ja`), default, storage key,
+  and a light browser-language detector used on first launch.
+- `translations.ts` — a flat `Record<key, string>` dictionary per language,
+  namespaced by feature (`nav.*`, `home.*`, `library.*`, `capture.*`,
+  `signin.*`, `settings.*`, `book.*`, `quote.*`, `edit.*`, `share.*`).
+- `LanguageProvider.tsx` — React context exposing `lang`, `setLanguage`, and
+  `t(key, vars)`. Persists the chosen language to Capacitor Preferences
+  (`@capacitor/preferences`) and mirrors it to `document.documentElement.lang`
+  so CSS `:lang()` rules can swap font stacks.
+
+No external i18n dependency — the dict is ~300 keys and interpolation is a
+single regex pass, so a bundler-unfriendly library wasn't worth the weight.
+
+### Font switching per language
+`src/index.css` imports Noto Sans JP via `@fontsource`/google font import
+alongside Pretendard and Inter, then uses `html:lang(...)` selectors to pick
+the primary family per locale: Pretendard for Korean, Inter for English,
+Noto Sans JP for Japanese. The rest of the Tailwind typography stack is
+unchanged, so layout metrics stay stable.
+
+### UI migration
+Every user-facing string in the app now flows through `t()` — including
+navigation (`BottomNav`), home (`Index` + `DailyQuote`), library (`Library`
++ `BookDetail` + `BookCover`), capture flow (`Capture`, `CaptureFromImage`,
+`QuoteSelector`), quote card + action/edit sheets (`QuoteCard`,
+`ActionSheet`, `EditQuoteSheet`, `useQuoteActions`), sign-in (`SignIn`) and
+settings (`Settings`). `useEnsureCovers.retryMissingCovers` was refactored
+to return structured `CoverRetryEntry[]` so the Settings diagnostic panel
+can localize its output instead of returning pre-baked Korean strings.
+
+### Language picker
+`Settings.tsx` gained a "Language" section listing all supported locales
+from `LANGUAGES`; tapping one immediately swaps UI strings and font
+stacks, and the choice survives relaunches.
+
+### Social share images
+Added `src/features/share/`:
+
+- `renderQuoteCard.ts` — pure Canvas 2D renderer. Waits on
+  `document.fonts.load(...)` so the first share after a cold start isn't in
+  a fallback font, greedy-wraps with per-glyph fallback for CJK, and
+  auto-shrinks the body size until the text fits the safe area. Outputs
+  PNG data URL + base64 for native handoff. Ships two sizes: **1080×1350**
+  (feed post / 4:5) and **1080×1920** (story / 9:16).
+- `shareImage.ts` — native path writes the PNG to `Directory.Cache` via
+  `@capacitor/filesystem`, reads back a `file://` URI, and hands it to the
+  `@capacitor/share` sheet (`Save Image`, Instagram, AirDrop, etc.). Web
+  path prefers `navigator.share({ files })` when supported and falls back
+  to a `<a download>` click.
+- `components/ShareQuoteSheet.tsx` — bottom sheet with a size toggle,
+  inline WYSIWYG preview, and a native share button. Rendering is
+  token-guarded so late renders can't clobber fresh state.
+
+Wired into `useQuoteActions`: long-pressing a quote now shows **Share as
+image / Edit / Delete** in the action sheet, and the share sheet inherits
+the quote's content, book title and author.
+
+`@capacitor/share` was added to the iOS project via `npx cap sync`; no
+Info.plist changes are required because the system share sheet handles its
+own permissions.
 
 ---
 

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import ActionSheet from "@/components/ActionSheet";
 import EditQuoteSheet from "@/components/EditQuoteSheet";
+import ShareQuoteSheet from "@/components/ShareQuoteSheet";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
@@ -31,6 +32,7 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const requestActions = useCallback((quote: Quote) => {
@@ -40,6 +42,10 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
 
   const handleEdit = useCallback(() => {
     setEditOpen(true);
+  }, []);
+
+  const handleShare = useCallback(() => {
+    setShareOpen(true);
   }, []);
 
   const handleAskDelete = useCallback(() => {
@@ -106,6 +112,7 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           onClose={() => setSheetOpen(false)}
           title={target?.content ? `"${target.content.slice(0, 40)}${target.content.length > 40 ? "…" : ""}"` : undefined}
           items={[
+            { id: "share", label: t("quote.share_image"), onSelect: handleShare },
             { id: "edit", label: t("quote.edit"), onSelect: handleEdit },
             { id: "delete", label: t("quote.delete"), destructive: true, onSelect: handleAskDelete },
           ]}
@@ -139,9 +146,22 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           }}
           onSave={handleSaveEdit}
         />
+
+        <ShareQuoteSheet
+          open={shareOpen}
+          content={target?.content ?? ""}
+          bookTitle={book?.title ?? null}
+          author={book?.author ?? null}
+          onClose={() => {
+            setShareOpen(false);
+            // keep `target` around only if another sheet is open; here
+            // the share sheet is terminal so we can drop it.
+            if (!editOpen && !confirmOpen) setTarget(null);
+          }}
+        />
       </>
     ),
-    [sheetOpen, target, confirmOpen, saving, editOpen, book, handleEdit, handleAskDelete, handleConfirmDelete, handleSaveEdit, t],
+    [sheetOpen, target, confirmOpen, saving, editOpen, shareOpen, book, handleEdit, handleShare, handleAskDelete, handleConfirmDelete, handleSaveEdit, t],
   );
 
   return { requestActions, portal } as const;
