@@ -111,3 +111,64 @@ export const ensureCoverForBook = async (book: Book): Promise<boolean> => {
   void syncOnce();
   return true;
 };
+
+export type RetryCoversResult = {
+  /** Total books in the library. */
+  totalBooks: number;
+  /** Books already with a cover (skipped). */
+  alreadyCovered: number;
+  /** Books actually queried against Google Books in this run. */
+  tried: number;
+  /** How many of the tried books got a cover successfully. */
+  updated: number;
+  /** Tried but Google Books returned no confident match. */
+  failed: number;
+  /** Per-book diagnostic lines, newest first. Useful for the UI log. */
+  log: string[];
+};
+
+/**
+ * Force-retry cover resolution for every book in the library that is still
+ * missing a cover. Bypasses the in-memory `attempted` cache so the user can
+ * click "retry" and immediately see a fresh pass against Google Books.
+ *
+ * Returns a diagnostic summary the UI can render in place — no toasts
+ * needed, so it also works before the user has logged in.
+ */
+export const retryMissingCovers = async (): Promise<RetryCoversResult> => {
+  // Reset the session cache first — otherwise previously-failed books would
+  // be skipped on this manual pass too.
+  attempted.clear();
+
+  const books = await repo.listBooksWithCounts();
+  const withoutCover = books.filter((b) => !b.cover_url && b.title.trim());
+  const alreadyCovered = books.length - withoutCover.length;
+
+  const result: RetryCoversResult = {
+    totalBooks: books.length,
+    alreadyCovered,
+    tried: withoutCover.length,
+    updated: 0,
+    failed: 0,
+    log: [],
+  };
+
+  if (withoutCover.length === 0) return result;
+
+  await mapLimit(withoutCover, MAX_CONCURRENT, async (book) => {
+    const r = await fetchBestCover(book.title, book.author);
+    if (r) {
+      await repo.updateBookCover(book.id, r.coverUrl, r.isbn);
+      result.updated += 1;
+      result.log.unshift(`✓ ${book.title} — 표지 매칭`);
+    } else {
+      result.failed += 1;
+      result.log.unshift(
+        `✗ ${book.title}${book.author ? ` / ${book.author}` : ""} — 매칭 실패`,
+      );
+    }
+  });
+
+  if (result.updated > 0) void syncOnce();
+  return result;
+};

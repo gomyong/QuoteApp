@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  BookMarked,
   CheckCircle2,
   Image as ImageIcon,
   LogIn,
@@ -14,6 +15,10 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
+import {
+  retryMissingCovers,
+  type RetryCoversResult,
+} from "@/features/books/useEnsureCovers";
 import {
   getSyncStatus,
   subscribeSyncStatus,
@@ -41,6 +46,8 @@ const Settings = () => {
   const [storeImages, setStoreImages] = useState(false);
   const [busy, setBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverResult, setCoverResult] = useState<RetryCoversResult | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -60,6 +67,17 @@ const Settings = () => {
     setBusy(true);
     await syncOnce();
     setBusy(false);
+  };
+
+  const triggerCoverRetry = async () => {
+    setCoverBusy(true);
+    setCoverResult(null);
+    try {
+      const r = await retryMissingCovers();
+      setCoverResult(r);
+    } finally {
+      setCoverBusy(false);
+    }
   };
 
   return (
@@ -204,6 +222,77 @@ const Settings = () => {
               </div>
             )}
           </dl>
+        </section>
+
+        <section className="glass rounded-2xl p-4 mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <BookMarked size={14} className="text-accent" />
+              <span className="text-sm text-foreground">표지 자동 찾기 (Google Books)</span>
+            </div>
+            <button
+              onClick={triggerCoverRetry}
+              disabled={coverBusy}
+              className="text-xs px-3 py-1 rounded-full bg-accent text-accent-foreground inline-flex items-center gap-1 disabled:opacity-60"
+            >
+              <RefreshCw size={12} className={coverBusy ? "animate-spin" : ""} />
+              {coverBusy ? "찾는 중..." : "표지 다시 찾기"}
+            </button>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+            서재에 표지가 없는 책들을 Google Books에서 다시 검색해요.
+            인터넷 연결이 필요합니다.
+          </p>
+
+          {coverResult && (
+            <dl className="text-xs text-muted-foreground space-y-1.5 pt-2 mt-2 border-t border-glass-border/20">
+              <div className="flex justify-between">
+                <dt>총 책</dt>
+                <dd className="text-foreground">{coverResult.totalBooks}권</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>이미 표지 있음</dt>
+                <dd className="text-foreground">{coverResult.alreadyCovered}권</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>시도</dt>
+                <dd className="text-foreground">{coverResult.tried}권</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>성공 / 실패</dt>
+                <dd className="text-foreground">
+                  ↑{coverResult.updated} / ↓{coverResult.failed}
+                </dd>
+              </div>
+              {coverResult.log.length > 0 && (
+                <div className="pt-2 mt-2 border-t border-glass-border/20 space-y-0.5">
+                  {coverResult.log.slice(0, 12).map((line, i) => (
+                    <div
+                      key={i}
+                      className={
+                        line.startsWith("✓")
+                          ? "text-foreground text-[11px] break-words"
+                          : "text-muted-foreground text-[11px] break-words"
+                      }
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  {coverResult.log.length > 12 && (
+                    <div className="text-[11px] text-muted-foreground italic">
+                      ...외 {coverResult.log.length - 12}건
+                    </div>
+                  )}
+                </div>
+              )}
+              {coverResult.totalBooks === 0 && (
+                <div className="pt-1 text-[11px] text-muted-foreground italic">
+                  서재에 아직 책이 없어요. 먼저 문장을 저장해 주세요.
+                </div>
+              )}
+            </dl>
+          )}
         </section>
         </div>
       </main>
