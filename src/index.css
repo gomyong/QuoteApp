@@ -8,60 +8,70 @@
 
 @layer base {
   :root {
-    /* Navy Mist palette test
-       — Background #F9F7F7 / Surface #DBE2EF / Text+Accent #112D4E.
-       DBE2EF is used as secondary surface (cards, borders, input fill) rather
-       than text, because #DBE2EF on #F9F7F7 fails contrast (~1.05:1). */
-    --background: 0 10% 97%;           /* #F9F7F7 */
-    --foreground: 213 64% 19%;         /* #112D4E */
+    /* Flat Violet palette
+       — Page background #F0F2F3 (cool light grey)
+       — Primary surface  #FFFFFF (cards, sheets, inputs)
+       — Accent           #9642F4 (vivid violet)
+       — Text             near-black with a subtle cool tint for readability
+         on both the grey page and white surfaces.
 
-    --card: 0 10% 97%;
-    --card-foreground: 213 64% 19%;
+       Design principles:
+         · No strokes or shadows on cards/sheets — all elevation comes
+           from a simple two-level surface system (grey page vs. white
+           surface). The `.glass` / `.glass-subtle` utilities below are
+           rewritten as solid `bg-card` so every existing
+           `className="glass …"` site picks up the flat look automatically.
+         · The accent purple is used sparingly as a CTA / focus / link
+           color — not as a surface fill. */
+    --background: 200 11% 95%;         /* #F0F2F3 */
+    --foreground: 222 14% 11%;         /* near-black, slight cool cast */
 
-    --popover: 0 10% 97%;
-    --popover-foreground: 213 64% 19%;
+    --card: 0 0% 100%;                 /* #FFFFFF */
+    --card-foreground: 222 14% 11%;
 
-    --primary: 213 64% 19%;            /* #112D4E — primary CTA fill */
-    --primary-foreground: 0 10% 97%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 14% 11%;
 
-    --secondary: 219 38% 90%;          /* #DBE2EF — soft blue-gray fill */
-    --secondary-foreground: 213 64% 19%;
+    --primary: 268 89% 61%;            /* #9642F4 */
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 219 38% 90%;
-    --muted-foreground: 213 25% 40%;   /* mid blue-gray, readable on #F9F7F7 */
+    --secondary: 0 0% 100%;            /* secondary surface = white */
+    --secondary-foreground: 222 14% 11%;
 
-    /* Accent mirrors primary — the palette is intentionally monochromatic
-       around the navy, so CTA/hover/active all read as #112D4E against
-       either the off-white bg or the mist surface. */
-    --accent: 213 64% 19%;
-    --accent-foreground: 0 10% 97%;
+    --muted: 200 11% 95%;              /* muted fill = page grey */
+    --muted-foreground: 220 7% 40%;    /* ~#5F6367 — readable on white */
+
+    --accent: 268 89% 61%;             /* #9642F4 — shared with primary */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 45%;
-    --destructive-foreground: 0 10% 97%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 219 38% 90%;             /* #DBE2EF as a soft divider */
-    --input: 219 38% 90%;
-    --ring: 213 64% 19%;
+    /* Hairlines kept as a low-contrast neutral grey for inputs and row
+       dividers inside sheets. Cards no longer draw this border. */
+    --border: 200 9% 88%;              /* ~#DEE2E3 */
+    --input: 0 0% 100%;                /* white input fill */
+    --ring: 268 89% 61%;               /* purple focus ring */
 
     --radius: 1rem;
 
-    /* Custom tokens — previously glass/navy. We keep the `.glass` utility
-       (bg-glass/40 + backdrop-blur) intact and retarget its fill to the
-       mist so the translucent layering still reads against the off-white
-       page. */
-    --glass-bg: 219 38% 90%;           /* #DBE2EF */
-    --glass-border: 213 30% 60%;       /* desaturated navy for hairlines */
-    --glow-accent: 213 64% 19%;
-    --surface-elevated: 219 38% 90%;
+    /* Legacy `--glass-*` tokens retained so existing utility classes
+       (`bg-glass/20`, `bg-glass-border/30`, …) keep compiling. They now
+       resolve to solid white + a neutral hover/active tint grey, which
+       matches the flat aesthetic. */
+    --glass-bg: 0 0% 100%;             /* solid white surface */
+    --glass-border: 200 6% 80%;        /* neutral grey for hover/press tints */
+    --glow-accent: 268 89% 61%;
+    --surface-elevated: 0 0% 100%;
 
-    --sidebar-background: 0 10% 97%;
-    --sidebar-foreground: 213 64% 19%;
-    --sidebar-primary: 213 64% 19%;
-    --sidebar-primary-foreground: 0 10% 97%;
-    --sidebar-accent: 219 38% 90%;
-    --sidebar-accent-foreground: 213 64% 19%;
-    --sidebar-border: 219 38% 90%;
-    --sidebar-ring: 213 64% 19%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 14% 11%;
+    --sidebar-primary: 268 89% 61%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 11% 95%;
+    --sidebar-accent-foreground: 222 14% 11%;
+    --sidebar-border: 200 9% 88%;
+    --sidebar-ring: 268 89% 61%;
   }
 }
 
@@ -128,20 +138,26 @@
 }
 
 @layer utilities {
+  /* Flat surface — previously a translucent / blurred pane with a
+     hairline border and soft shadow. The class name is kept for
+     backward compatibility across the app; every call site now renders
+     as a solid white card. */
   .glass {
-    @apply bg-glass/40 backdrop-blur-xl border border-glass-border/30 shadow-lg;
+    @apply bg-card;
   }
 
   .glass-subtle {
-    @apply bg-glass/20 backdrop-blur-md border border-glass-border/15;
+    @apply bg-card;
   }
 
   .text-gradient {
     @apply bg-gradient-to-r from-foreground via-foreground/80 to-accent bg-clip-text text-transparent;
   }
 
+  /* Flat aesthetic → no glow. Retained as a no-op utility so legacy
+     `className="… glow"` sites keep compiling without a visual change. */
   .glow {
-    box-shadow: 0 0 30px -5px hsl(var(--glow-accent) / 0.15);
+    box-shadow: none;
   }
 
   .safe-bottom {

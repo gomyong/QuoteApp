@@ -62,7 +62,7 @@ const ActionSheet = ({ open, title, items, onClose }: Props) => {
             className="fixed inset-x-0 bottom-0 z-[91] px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]"
           >
             <div className="max-w-lg mx-auto">
-              <div className="rounded-2xl bg-surface-elevated/90 backdrop-blur-xl border border-glass-border/30 overflow-hidden shadow-2xl">
+              <div className="rounded-2xl bg-card overflow-hidden">
                 {title && (
                   <div className="px-4 py-3 text-center text-xs text-muted-foreground border-b border-glass-border/20">
                     {title}
@@ -93,7 +93,7 @@ const ActionSheet = ({ open, title, items, onClose }: Props) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-2 w-full rounded-2xl py-4 text-base font-semibold bg-surface-elevated/90 backdrop-blur-xl border border-glass-border/30 text-foreground active:bg-glass-border/30"
+                className="mt-2 w-full rounded-2xl py-4 text-base font-semibold bg-card text-foreground active:bg-glass-border/30"
                 style={{ touchAction: "manipulation" }}
               >
                 {t("common.cancel")}

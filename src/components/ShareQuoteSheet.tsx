@@ -133,7 +133,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            className="fixed inset-x-0 bottom-0 z-[96] max-h-[92dvh] flex flex-col bg-background rounded-t-3xl border-t border-glass-border/30 shadow-2xl"
+            className="fixed inset-x-0 bottom-0 z-[96] max-h-[92dvh] flex flex-col bg-background rounded-t-3xl"
           >
             <div className="pt-3 flex justify-center flex-none">
               <div className="h-1.5 w-10 rounded-full bg-glass-border/60" />
