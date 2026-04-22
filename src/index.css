@@ -8,10 +8,12 @@
 
 @layer base {
   :root {
-    /* Flat Violet palette
+    /* Flat Navy palette
        — Page background #F0F2F3 (cool light grey)
        — Primary surface  #FFFFFF (cards, sheets, inputs)
-       — Accent           #9642F4 (vivid violet)
+       — Accent           #1E3A8A (classic navy — moderate depth, reads
+                                    as unmistakably navy without looking
+                                    black)
        — Text             near-black with a subtle cool tint for readability
          on both the grey page and white surfaces.
 
@@ -32,7 +34,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 14% 11%;
 
-    --primary: 268 89% 61%;            /* #9642F4 */
+    --primary: 225 64% 33%;            /* #1E3A8A */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 100%;            /* secondary surface = white */
@@ -41,7 +43,7 @@
     --muted: 200 11% 95%;              /* muted fill = page grey */
     --muted-foreground: 220 7% 40%;    /* ~#5F6367 — readable on white */
 
-    --accent: 268 89% 61%;             /* #9642F4 — shared with primary */
+    --accent: 225 64% 33%;             /* #1E3A8A — shared with primary */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 45%;
@@ -51,7 +53,7 @@
        dividers inside sheets. Cards no longer draw this border. */
     --border: 200 9% 88%;              /* ~#DEE2E3 */
     --input: 0 0% 100%;                /* white input fill */
-    --ring: 268 89% 61%;               /* purple focus ring */
+    --ring: 225 64% 33%;               /* navy focus ring */
 
     --radius: 1rem;
 
@@ -61,17 +63,17 @@
        matches the flat aesthetic. */
     --glass-bg: 0 0% 100%;             /* solid white surface */
     --glass-border: 200 6% 80%;        /* neutral grey for hover/press tints */
-    --glow-accent: 268 89% 61%;
+    --glow-accent: 225 64% 33%;
     --surface-elevated: 0 0% 100%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 14% 11%;
-    --sidebar-primary: 268 89% 61%;
+    --sidebar-primary: 225 64% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 200 11% 95%;
     --sidebar-accent-foreground: 222 14% 11%;
     --sidebar-border: 200 9% 88%;
-    --sidebar-ring: 268 89% 61%;
+    --sidebar-ring: 225 64% 33%;
   }
 }
 
