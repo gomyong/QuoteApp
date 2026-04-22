@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { Shuffle, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, ChevronUp, Shuffle, Sparkles } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface DailyQuoteProps {
@@ -13,8 +14,42 @@ interface DailyQuoteProps {
   onShuffle?: () => void;
 }
 
+// Match the visible clamp used by regular QuoteCards so the featured
+// card and the recent-list feel consistent at a glance.
+const CLAMP_LINES = 3;
+
 const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) => {
   const { t } = useTranslation();
+
+  const [expanded, setExpanded] = useState(false);
+  const [overflowed, setOverflowed] = useState(false);
+  const measureRef = useRef<HTMLParagraphElement | null>(null);
+
+  // Reset expansion whenever the content changes (e.g. the user shuffled).
+  // Otherwise a short new quote would show an "접기" toggle that does nothing.
+  useEffect(() => {
+    setExpanded(false);
+  }, [content]);
+
+  // Measure an off-screen copy of the quote at the exact same typography
+  // as the visible paragraph to decide whether the "펼쳐보기" affordance
+  // is worth showing. Using scrollHeight on the clamped element is
+  // unreliable because `-webkit-line-clamp` actively truncates it.
+  useLayoutEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    const check = () => {
+      const lineHeight = parseFloat(getComputedStyle(el).lineHeight || "0");
+      if (!lineHeight) return;
+      const lines = Math.round(el.scrollHeight / lineHeight);
+      setOverflowed(lines > CLAMP_LINES);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [content]);
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
@@ -47,15 +82,52 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
           )}
         </div>
 
-        <motion.p
-          key={content}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap"
+        {/* Hidden measurement copy — identical typography, no clamp. */}
+        <p
+          ref={measureRef}
+          aria-hidden="true"
+          className="text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap absolute -left-[9999px] top-0 w-full pointer-events-none"
         >
           "{content}"
-        </motion.p>
+        </p>
+
+        <AnimatePresence initial={false} mode="wait">
+          <motion.p
+            key={(expanded ? "e-" : "c-") + content}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className={
+              "text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap " +
+              (expanded ? "" : "line-clamp-3")
+            }
+          >
+            "{content}"
+          </motion.p>
+        </AnimatePresence>
+
+        {overflowed && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="mt-3 inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80 active:scale-[0.98] transition-all"
+            style={{ touchAction: "manipulation" }}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp size={14} />
+                <span>{t("quote.collapse")}</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown size={14} />
+                <span>{t("quote.expand")}</span>
+              </>
+            )}
+          </button>
+        )}
 
         <div className="mt-6 flex items-center gap-2">
           <div className="w-6 h-px bg-accent/40" />
