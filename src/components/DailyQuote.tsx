@@ -82,11 +82,13 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
           )}
         </div>
 
-        {/* Hidden measurement copy — identical typography, no clamp. */}
+        {/* Hidden measurement copy — identical typography, no clamp.
+            Body size matches regular QuoteCards (text-base) so the daily
+            quote doesn't visually shout over the rest of the feed. */}
         <p
           ref={measureRef}
           aria-hidden="true"
-          className="text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap absolute -left-[9999px] top-0 w-full pointer-events-none"
+          className="text-foreground/90 text-base leading-relaxed font-light whitespace-pre-wrap absolute -left-[9999px] top-0 w-full pointer-events-none"
         >
           "{content}"
         </p>
@@ -99,7 +101,7 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className={
-              "text-foreground text-lg leading-relaxed font-light whitespace-pre-wrap " +
+              "text-foreground/90 text-base leading-relaxed font-light whitespace-pre-wrap " +
               (expanded ? "" : "line-clamp-3")
             }
           >
