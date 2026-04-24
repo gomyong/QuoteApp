@@ -58,9 +58,23 @@ const QuoteSelector = ({ result, onConfirm }: Props) => {
                 }`}
               >
                 <div className="flex items-start gap-2">
+                  {/*
+                   * Selection indicator. `shrink-0` + `aspect-square` + a
+                   * matched h/w are all required to keep a perfect circle:
+                   *   - Flex children default to `flex-shrink: 1`, so on
+                   *     long sentences that wrap to multiple lines the
+                   *     16×16 indicator was getting squeezed horizontally,
+                   *     producing an ellipse that looked especially off
+                   *     once the accent background filled on check.
+                   *   - `aspect-square` defends the shape against any
+                   *     intrinsic size leaking through from the `Check`
+                   *     icon on iOS WKWebView.
+                   */}
                   <span
-                    className={`mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border ${
-                      isOn ? "bg-accent border-accent text-accent-foreground" : "border-muted-foreground/40"
+                    className={`mt-0.5 inline-flex h-4 w-4 shrink-0 aspect-square items-center justify-center rounded-full border ${
+                      isOn
+                        ? "bg-accent border-accent text-accent-foreground"
+                        : "border-muted-foreground/40"
                     }`}
                   >
                     {isOn && <Check size={10} />}
