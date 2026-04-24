@@ -181,51 +181,107 @@ const ensureFontsReady = async (
 };
 
 /**
- * Greedy word-wrap for canvas. Handles both spaced languages (en/ja
- * western chunks) and dense CJK where we fall back to per-character
- * wrapping when a single "word" exceeds the line budget.
+ * Word-wrap for canvas with a light semantic assist.
+ *
+ * Baseline is still greedy whitespace wrapping (so spaced languages like
+ * English / Japanese-with-western-chunks work, and dense CJK falls back
+ * to per-character wrapping when a single token exceeds the line
+ * budget). On top of that, we track the *last* whitespace-separated
+ * token that ended at a clause or sentence boundary — punctuation like
+ * `.` `,` `!` `?` `;` `:` and their CJK full-width variants — and
+ * prefer to break there when the line would otherwise overflow. This
+ * nudges the wrap toward natural "meaning units" instead of chopping a
+ * sentence mid-phrase.
+ *
+ * Knobs:
+ *   - `CLAUSE_END`        which tokens count as a candidate soft break.
+ *   - `MIN_SOFT_FILL`     fraction of the column a line must already
+ *                         occupy before we accept a soft break. Too low
+ *                         and we get a ragged stairstep (eager-break on
+ *                         the first comma); too high and the heuristic
+ *                         rarely fires. 0.4 feels balanced in practice.
+ *
+ * Lines without any clause-ending punctuation fall straight through to
+ * the greedy path — no behavior change for those.
  */
 const wrapLines = (
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
 ): string[] => {
+  const CLAUSE_END = /[.,!?;:。、！？；：][\]\)"'\u201D\u2019]?$/;
+  const MIN_SOFT_FILL = 0.4;
+
   const paragraphs = text.split(/\r?\n/);
   const out: string[] = [];
+
+  const flush = (content: string) => {
+    const trimmed = content.trim();
+    if (trimmed) out.push(trimmed);
+  };
+
   for (const para of paragraphs) {
     if (!para.trim()) {
       out.push("");
       continue;
     }
-    // First split on whitespace. If a single token is still too wide
-    // (common for Japanese without spaces) we wrap per glyph.
-    const tokens = para.split(/(\s+)/);
-    let line = "";
-    const pushLine = () => {
-      out.push(line.trim());
-      line = "";
-    };
+    const tokens = para.split(/(\s+)/).filter((t) => t !== "");
+
+    let line = "";       // content accumulated into the current line
+    let softLine = "";   // snapshot of `line` at the last accepted break
+    let softTail = "";   // tokens swallowed after the last accepted break
+
     for (const token of tokens) {
-      if (token === "") continue;
       const candidate = line + token;
       if (ctx.measureText(candidate).width <= maxWidth) {
         line = candidate;
+        // Promote this boundary to "best soft break" if it's a
+        // clause/sentence end and the line already carries enough text.
+        if (/\S/.test(token) && CLAUSE_END.test(token)) {
+          if (ctx.measureText(line).width >= maxWidth * MIN_SOFT_FILL) {
+            softLine = line;
+            softTail = "";
+          } else if (softLine) {
+            // Threshold not met — keep extending the tail we'd carry
+            // over if we eventually break at the earlier candidate.
+            softTail += token;
+          }
+        } else if (softLine) {
+          softTail += token;
+        }
         continue;
       }
-      // Token doesn't fit alongside the current line.
-      if (line.trim()) pushLine();
+
+      // Overflow — prefer the remembered soft break if we have one.
+      if (softLine) {
+        flush(softLine);
+        line = (softTail + token).replace(/^\s+/, "");
+        softLine = "";
+        softTail = "";
+        if (ctx.measureText(line).width <= maxWidth) continue;
+        // Carried content + the new token still don't fit — fall through
+        // to the hard-break path below.
+      }
+
+      if (line.trim()) flush(line);
       if (ctx.measureText(token).width <= maxWidth) {
         line = token;
-        continue;
-      }
-      // Token is individually too wide — wrap per character.
-      for (const ch of token) {
-        if (ctx.measureText(line + ch).width > maxWidth) pushLine();
-        line += ch;
+      } else {
+        // Single token wider than a full column — wrap per glyph.
+        line = "";
+        for (const ch of token) {
+          if (ctx.measureText(line + ch).width > maxWidth) {
+            flush(line);
+            line = "";
+          }
+          line += ch;
+        }
       }
     }
-    if (line.trim()) pushLine();
+
+    if (line.trim()) flush(line);
   }
+
   return out;
 };
 
@@ -272,12 +328,14 @@ export const formatSubtitle = (
 };
 
 /**
- * Load & cache the logo image used as a subtle watermark. Resolves to
+ * Load & cache the wordmark used as a subtle watermark. Resolves to
  * `null` if the fetch/decode fails — rendering still proceeds without a
  * watermark rather than throwing.
  *
- * The icon lives at `./icons/icon-512.png` (from `public/icons/`), which
- * Vite copies into the build output. We resolve the URL against
+ * The asset lives at `./share-watermark.png` (from `public/`), a
+ * horizontal grey "Quote" wordmark that's pre-tinted for watermark use
+ * (no runtime dimming needed to avoid shouting over the quote). Vite
+ * copies it into the build output. We resolve the URL against
  * `document.baseURI` so it works both on capacitor://localhost (iOS),
  * http://localhost (Android) and plain web deployments.
  */
@@ -288,7 +346,7 @@ const loadLogoOnce = async (): Promise<HTMLImageElement | null> => {
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    const url = new URL("./icons/icon-512.png", document.baseURI).href;
+    const url = new URL("./share-watermark.png", document.baseURI).href;
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = () => reject(new Error("logo load failed"));
@@ -347,10 +405,13 @@ export const renderQuoteCard = async (
   const SUBTITLE_WEIGHT = 300;
   const subtitleGap = Math.round(bodySize * 0.9); // breathing room below last body line
 
-  // Logo watermark at bottom-center.
-  const logoSize = Math.round(width * 0.045); // ~49px at 1080
+  // Wordmark watermark at bottom-center. Artwork is a horizontal "Quote"
+  // wordmark already rendered in a subdued grey, so we preserve most of
+  // its native tone rather than dimming further — a slight alpha keeps it
+  // from competing with the quote body on high-contrast screens.
+  const logoTargetWidth = Math.round(width * 0.12); // ~130px at 1080
   const logoBottomMargin = Math.round(height * 0.055);
-  const logoOpacity = 0.28;
+  const logoOpacity = 0.85;
 
   // Compose final text up-front so the font warmup can preload every glyph
   // for both body and subtitle in one pass.
@@ -418,17 +479,22 @@ export const renderQuoteCard = async (
     ctx.fillText(subtitle, width / 2, subtitleBaseline);
   }
 
-  // Logo watermark (bottom-center, translucent). Any load failure is
+  // Wordmark watermark (bottom-center, slightly translucent). The
+  // artwork is rectangular (wider than tall) so we draw at its natural
+  // aspect ratio — never squashed into a square. Any load failure is
   // silently skipped so a missing/blocked asset can't break the share.
   const logo = await logoPromise;
-  if (logo) {
-    const logoX = Math.round((width - logoSize) / 2);
-    const logoY = height - logoBottomMargin - logoSize;
+  if (logo && logo.naturalWidth > 0) {
+    const aspect = logo.naturalHeight / logo.naturalWidth;
+    const logoW = logoTargetWidth;
+    const logoH = Math.round(logoTargetWidth * aspect);
+    const logoX = Math.round((width - logoW) / 2);
+    const logoY = height - logoBottomMargin - logoH;
     ctx.save();
     ctx.globalAlpha = logoOpacity;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+    ctx.drawImage(logo, logoX, logoY, logoW, logoH);
     ctx.restore();
   }
 
