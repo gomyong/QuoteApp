@@ -204,6 +204,8 @@ const ko: Dict = {
     "문장이 길어 세로형(9:16) 사이즈로 자동 전환했어요.",
   "share.too_long_warning":
     "문장이 매우 길어 일부가 잘릴 수 있어요. 긴 문장 분할 저장은 준비 중이에요.",
+  "share.select_sentences_hint": "공유할 문장을 골라보세요",
+  "share.sentences_none_selected": "선택된 문장이 없어요",
 };
 
 const en: Dict = {
@@ -377,6 +379,8 @@ const en: Dict = {
     "This quote is long — switched to the 9:16 story format automatically.",
   "share.too_long_warning":
     "This quote is very long and part of it may be clipped. Multi-page sharing is coming soon.",
+  "share.select_sentences_hint": "Pick which sentences to share",
+  "share.sentences_none_selected": "No sentences selected",
 };
 
 const ja: Dict = {
@@ -550,6 +554,8 @@ const ja: Dict = {
     "文章が長いため、縦型 (9:16) サイズに自動切り替えしました。",
   "share.too_long_warning":
     "文章が非常に長いため、一部が切れる可能性があります。分割保存は近日対応予定です。",
+  "share.select_sentences_hint": "共有する文を選んでください",
+  "share.sentences_none_selected": "文が選択されていません",
 };
 
 export const translations: Record<Language, Dict> = { ko, en, ja };

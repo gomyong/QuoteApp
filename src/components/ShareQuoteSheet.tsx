@@ -33,6 +33,8 @@ import {
   type ShareSize,
 } from "@/features/share/renderQuoteCard";
 import { sharePng } from "@/features/share/shareImage";
+import { splitForShare } from "@/features/share/splitForShare";
+import SentenceSelector from "@/components/SentenceSelector";
 
 type Props = {
   open: boolean;
@@ -52,11 +54,56 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
   // (or a newer render has been requested) and clobbering fresh state.
   const renderToken = useRef(0);
 
-  // Re-render whenever the sheet opens, the quote changes, the user
-  // picks a different size, or the UI language flips (fonts change).
+  // Sentence-level selection — mirrors the OCR capture flow so long
+  // quotes can be cherry-picked down to just the parts the user wants
+  // on the shared image. Only surfaces when there's more than one
+  // shareable unit; otherwise the sheet behaves identically to before.
+  const sentences = useMemo(() => splitForShare(content), [content]);
+  const multiSentence = sentences.length > 1;
+  const [selected, setSelected] = useState<Set<number>>(
+    () => new Set(sentences.map((_, i) => i)),
+  );
+  // Re-seed selection whenever the incoming quote (and therefore its
+  // tokenization) changes — e.g. when the sheet is re-used for a
+  // different card.
+  useEffect(() => {
+    setSelected(new Set(sentences.map((_, i) => i)));
+  }, [sentences]);
+  const toggleSentence = (i: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
+  // What actually goes to the renderer. Single-sentence path returns
+  // the original text verbatim (preserves any intentional whitespace
+  // the user kept on the note); multi-sentence path joins the picked
+  // pieces with a single space — the canvas wrapper will rewrap them
+  // just fine.
+  const effectiveContent = useMemo(() => {
+    if (!multiSentence) return content;
+    const picked = Array.from(selected)
+      .sort((a, b) => a - b)
+      .map((i) => sentences[i])
+      .filter(Boolean);
+    return picked.join(" ").trim();
+  }, [multiSentence, content, selected, sentences]);
+
+  // Re-render whenever the sheet opens, the effective content changes
+  // (either the input quote itself or the user's sentence selection),
+  // the user picks a different size, or the UI language flips.
   useEffect(() => {
     if (!open) {
       setImage(null);
+      return;
+    }
+    if (!effectiveContent) {
+      // Nothing selected — skip render, show empty state instead.
+      setImage(null);
+      setRendering(false);
       return;
     }
     const token = ++renderToken.current;
@@ -65,7 +112,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     (async () => {
       try {
         const r = await renderQuoteCard({
-          content,
+          content: effectiveContent,
           bookTitle,
           author,
           lang,
@@ -79,7 +126,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
         if (renderToken.current === token) setRendering(false);
       }
     })();
-  }, [open, content, bookTitle, author, lang, selectedSize]);
+  }, [open, effectiveContent, bookTitle, author, lang, selectedSize]);
 
   useEffect(() => {
     if (!open) return;
@@ -190,6 +237,25 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                 })}
               </div>
 
+              {/* Sentence selector — only surfaced when there's more than
+                  one shareable unit. Same tap-to-toggle / filled-circle
+                  treatment as the OCR capture flow so the interaction
+                  feels identical across the two places the user
+                  composes a quote. */}
+              {multiSentence && (
+                <div className="mb-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t("share.select_sentences_hint")}
+                  </p>
+                  <SentenceSelector
+                    sentences={sentences}
+                    selected={selected}
+                    onToggle={toggleSentence}
+                    maxHeightClass="max-h-52"
+                  />
+                </div>
+              )}
+
               {/* Overflow banners — surface to the user when the renderer
                   auto-promoted the size (Strategy B) or flagged the quote
                   as too long to fit even at the largest canvas + smallest
@@ -239,6 +305,12 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                       className="w-full h-full object-contain select-none"
                       draggable={false}
                     />
+                  ) : !effectiveContent ? (
+                    // Empty selection — nothing to preview. Tells the user
+                    // why the button below is disabled.
+                    <div className="text-muted-foreground text-xs px-4 text-center">
+                      {t("share.sentences_none_selected")}
+                    </div>
                   ) : (
                     <ImageIcon size={24} className="text-muted-foreground" />
                   )}
@@ -251,7 +323,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
               <motion.button
                 type="button"
                 onClick={handleShare}
-                disabled={!image || sharing || rendering}
+                disabled={!image || sharing || rendering || !effectiveContent}
                 whileTap={{ scale: 0.97 }}
                 className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-medium bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-60"
                 style={{ touchAction: "manipulation" }}
