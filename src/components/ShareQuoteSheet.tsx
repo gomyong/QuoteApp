@@ -17,7 +17,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { Image as ImageIcon, Loader2, Share2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Image as ImageIcon,
+  Info,
+  Loader2,
+  Share2,
+  X,
+} from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import {
   renderQuoteCard,
@@ -101,14 +108,19 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
   };
 
   // Preview height caps so the tall story format still fits on small screens.
+  // Aspect ratio follows the *rendered* image when available (the renderer
+  // may auto-promote a too-long Post → Story, so the visible bytes and the
+  // preview frame should agree).
   const previewStyle = useMemo<React.CSSProperties>(() => {
+    const w = image?.width ?? selectedSize.width;
+    const h = image?.height ?? selectedSize.height;
     return {
-      aspectRatio: `${selectedSize.width} / ${selectedSize.height}`,
+      aspectRatio: `${w} / ${h}`,
       // 60vh cap, narrower for portrait phone screens with on-screen keyboards etc.
       maxHeight: "min(60dvh, 520px)",
       width: "auto",
     };
-  }, [selectedSize]);
+  }, [selectedSize, image]);
 
   const body = (
     <AnimatePresence>
@@ -177,6 +189,37 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                   );
                 })}
               </div>
+
+              {/* Overflow banners — surface to the user when the renderer
+                  auto-promoted the size (Strategy B) or flagged the quote
+                  as too long to fit even at the largest canvas + smallest
+                  allowed font (Strategy C placeholder). */}
+              {image && (image.wasPromoted || image.tooLong) && (
+                <div className="mb-4 space-y-2">
+                  {image.wasPromoted && (
+                    <div className="flex items-start gap-2 rounded-xl bg-glass-border/15 px-3 py-2.5">
+                      <Info
+                        size={14}
+                        className="mt-0.5 text-muted-foreground flex-none"
+                      />
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t("share.promoted_notice")}
+                      </p>
+                    </div>
+                  )}
+                  {image.tooLong && (
+                    <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5">
+                      <AlertTriangle
+                        size={14}
+                        className="mt-0.5 text-amber-700 flex-none"
+                      />
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        {t("share.too_long_warning")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Preview */}
               <div className="flex items-center justify-center">

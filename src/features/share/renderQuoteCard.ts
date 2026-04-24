@@ -286,22 +286,53 @@ const wrapLines = (
 };
 
 /**
- * Lay out the body text at a **fixed** font size — no length-dependent
- * shrinking. Long quotes simply wrap into more lines. Returns the lines
- * along with the line-height we'll paint at.
+ * Base body font size at 1080-wide canvas outputs. The renderer scales
+ * this proportionally for other canvas widths (currently 1080 for both
+ * share sizes, so effectively a constant in practice).
  */
-const layoutBody = (
-  ctx: CanvasRenderingContext2D,
-  content: string,
-  stack: string,
-  maxWidth: number,
-  size: number,
-  weight: number,
-): { lines: string[]; lineHeight: number } => {
-  ctx.font = `${weight} ${size}px ${stack}`;
-  const lineHeight = Math.round(size * 1.55);
-  const lines = wrapLines(ctx, content, maxWidth);
-  return { lines, lineHeight };
+const BODY_SIZE_BASE_AT_1080 = 42;
+
+/**
+ * Soft auto-shrink ladder (Strategy A). For quotes that don't fit on
+ * the preferred canvas at the base size, we walk this ladder from
+ * largest to smallest and keep the first scale that lets every line
+ * fit. 0.857 ≈ 14% smaller than base — small enough that the reader
+ * doesn't notice the variation between quotes but still buys a couple
+ * of extra lines of breathing room. Going smaller starts to feel
+ * anemic for a 200-weight sans at this column width.
+ */
+const SHRINK_SCALES = [1.0, 0.95, 0.9, 0.857] as const;
+
+/**
+ * Visual reservations around the centered text block used to derive
+ * the vertical budget for the body (see `getMaxBodyHeight`).
+ *   - Top:    7%  — breathing room from the upper edge.
+ *   - Bottom: 14% — subtitle gap + watermark + lower air.
+ * Chosen empirically so the frame looks balanced at both 4:5 and 9:16.
+ */
+const TOP_SAFE_RATIO = 0.07;
+const BOTTOM_RESERVE_RATIO = 0.14;
+
+/**
+ * Max vertical space the body lines may occupy on a given canvas. The
+ * text block is centered around 45% of canvas height (see render), so
+ * the smaller of (centerY - topSafe) and (bottomEdge - centerY)
+ * bounds the half-block. Subtract the subtitle block (if any) since
+ * it consumes part of the same budget.
+ */
+const getMaxBodyHeight = (
+  canvasHeight: number,
+  subtitleBlockHeight: number,
+): number => {
+  const blockCenterY = canvasHeight * 0.45;
+  const topSafe = canvasHeight * TOP_SAFE_RATIO;
+  const bottomReserve = canvasHeight * BOTTOM_RESERVE_RATIO;
+  const maxHalfBlock = Math.min(
+    blockCenterY - topSafe,
+    canvasHeight - bottomReserve - blockCenterY,
+  );
+  const maxBlockHeight = Math.max(0, maxHalfBlock * 2);
+  return Math.max(0, maxBlockHeight - subtitleBlockHeight);
 };
 
 /**
@@ -374,55 +405,149 @@ export type RenderedImage = {
   base64: string;
   width: number;
   height: number;
+  /**
+   * The canvas size we actually rendered at. Usually equal to
+   * `input.size`, but if the quote was too long for the requested size
+   * at every allowed font scale, we auto-promote from `post` (4:5) to
+   * `story` (9:16) so the text still fits without extreme shrinking.
+   */
+  appliedSize: ShareSize;
+  /** Final body font size in px (after auto-shrink). */
+  appliedBodySize: number;
+  /** True when `appliedSize.id !== input.size.id` (Strategy B kicked in). */
+  wasPromoted: boolean;
+  /**
+   * True when even the largest allowed canvas at the smallest allowed
+   * font scale still overflows. The image is still produced (so the
+   * user has something) but the UI should warn that content may clip.
+   * Fixed by the upcoming multi-page split (Strategy C — future work).
+   */
+  tooLong: boolean;
 };
 
 export const renderQuoteCard = async (
   input: RenderInput,
 ): Promise<RenderedImage> => {
-  const { width, height } = input.size;
   const stack = fontStackFor(input.lang);
 
   // Palette — kept in-file (not tied to Tailwind tokens) so the final PNG
   // is stable even if the in-app theme changes or the user is currently
   // on dark mode. These mirror the "Navy Mist" reference.
-  const BG = "#F4F3F1"; // near-white paper
-  const FG = "#1B1B1B"; // ink
+  const BG = "#F4F3F1";    // near-white paper
+  const FG = "#1B1B1B";    // ink
   const MUTED = "#5A5A5A"; // subdued byline grey
 
-  // Layout constants — everything is fixed (no length-dependent shrinking).
-  //
   //   - Body column inset: 25% per side → ~50% column width at 1080 (540px).
-  //   - Body size: 42px at 1080-wide outputs; scales proportionally for
-  //     other canvas widths.
-  //   - Body weight: 200 (ExtraLight).
+  //   - Body weight: 200 (ExtraLight), subtitle weight 300 (Light).
   const bodySideInsetRatio = 0.25;
-  const BODY_SIZE_PX_AT_1080 = 42;
-  const bodySize = Math.round((width / 1080) * BODY_SIZE_PX_AT_1080);
   const BODY_WEIGHT = 200;
-
-  // Byline (book title · author), centered under the body.
-  const subtitleSize = Math.round(width * 0.026); // ~28px at 1080
   const SUBTITLE_WEIGHT = 300;
-  const subtitleGap = Math.round(bodySize * 0.9); // breathing room below last body line
 
-  // Wordmark watermark at bottom-center. Artwork is a horizontal "Quote"
-  // wordmark already rendered in a subdued grey, so we preserve most of
-  // its native tone rather than dimming further — a slight alpha keeps it
-  // from competing with the quote body on high-contrast screens.
-  const logoTargetWidth = Math.round(width * 0.12); // ~130px at 1080
-  const logoBottomMargin = Math.round(height * 0.055);
-  const logoOpacity = 0.85;
-
-  // Compose final text up-front so the font warmup can preload every glyph
-  // for both body and subtitle in one pass.
   const raw = input.content.trim();
   const body = `\u201C${raw}\u201D`;
   const subtitle = formatSubtitle(input.bookTitle, input.author);
 
-  // Kick off logo load in parallel with font warmup — logo is a local
-  // asset on native, so this is essentially free.
+  // Kick off logo load + font warmup in parallel. Warmup at the base
+  // body size — once a font family/weight is decoded, reuse at any
+  // size is effectively free, so this covers both base and shrunk
+  // variants we might try below.
   const logoPromise = loadLogoOnce();
-  await ensureFontsReady(input.lang, bodySize, body, subtitle);
+  const warmupSize = Math.round((input.size.width / 1080) * BODY_SIZE_BASE_AT_1080);
+  await ensureFontsReady(input.lang, warmupSize, body, subtitle);
+
+  // ----- Layout probe (Strategy A + B) --------------------------------
+  // Walk scales on the caller's preferred size first. If nothing fits
+  // and the preference was `post`, also try `story` (auto-promote).
+  // Returned by `computeLayout` so we don't recompute for the real
+  // render pass.
+  const POST_SIZE = SHARE_SIZES.find((s) => s.id === "post")!;
+  const STORY_SIZE = SHARE_SIZES.find((s) => s.id === "story")!;
+  const sizesToTry: ShareSize[] =
+    input.size.id === "post" ? [POST_SIZE, STORY_SIZE] : [STORY_SIZE];
+
+  const probeCanvas = document.createElement("canvas");
+  const probeCtx = probeCanvas.getContext("2d");
+  if (!probeCtx) throw new Error("Canvas 2D context unavailable");
+
+  type Layout = {
+    bodySize: number;
+    lines: string[];
+    lineHeight: number;
+    subtitleSize: number;
+    subtitleGap: number;
+    subtitleBlockHeight: number;
+    fits: boolean;
+  };
+
+  const computeLayout = (size: ShareSize, scale: number): Layout => {
+    const baseBodySize = Math.round((size.width / 1080) * BODY_SIZE_BASE_AT_1080);
+    const bodySize = Math.round(baseBodySize * scale);
+    const contentMaxWidth = Math.round(size.width * (1 - 2 * bodySideInsetRatio));
+    // Subtitle sizing is anchored to the *base* body size so the byline
+    // doesn't bob up/down between quotes of different body shrink levels.
+    const subtitleSize = Math.round(size.width * 0.026);
+    const subtitleGap = Math.round(baseBodySize * 0.9);
+    const subtitleBlockHeight = subtitle ? subtitleGap + subtitleSize : 0;
+    const maxBodyHeight = getMaxBodyHeight(size.height, subtitleBlockHeight);
+
+    probeCtx.font = `${BODY_WEIGHT} ${bodySize}px ${stack}`;
+    const lineHeight = Math.round(bodySize * 1.55);
+    const lines = wrapLines(probeCtx, body, contentMaxWidth);
+    const fits = lines.length * lineHeight <= maxBodyHeight;
+
+    return {
+      bodySize,
+      lines,
+      lineHeight,
+      subtitleSize,
+      subtitleGap,
+      subtitleBlockHeight,
+      fits,
+    };
+  };
+
+  let applied: { size: ShareSize; layout: Layout } | null = null;
+  outer: for (const trySize of sizesToTry) {
+    for (const scale of SHRINK_SCALES) {
+      const layout = computeLayout(trySize, scale);
+      if (layout.fits) {
+        applied = { size: trySize, layout };
+        break outer;
+      }
+    }
+  }
+
+  let tooLong = false;
+  if (!applied) {
+    // Nothing fit cleanly — render at the biggest canvas we considered
+    // using the smallest allowed scale, and flag for UI warning. Clipping
+    // is possible; Strategy C (multi-page split) will address this.
+    const fallbackSize = sizesToTry[sizesToTry.length - 1];
+    const fallbackScale = SHRINK_SCALES[SHRINK_SCALES.length - 1];
+    applied = {
+      size: fallbackSize,
+      layout: computeLayout(fallbackSize, fallbackScale),
+    };
+    tooLong = true;
+  }
+
+  const wasPromoted = applied.size.id !== input.size.id;
+
+  // ----- Actual render -----------------------------------------------
+  const { width, height } = applied.size;
+  const {
+    bodySize,
+    lines,
+    lineHeight,
+    subtitleSize,
+    subtitleGap,
+    subtitleBlockHeight,
+  } = applied.layout;
+
+  // Watermark sizing scales with the chosen canvas size.
+  const logoTargetWidth = Math.round(width * 0.12); // ~130px at 1080
+  const logoBottomMargin = Math.round(height * 0.055);
+  const logoOpacity = 0.85;
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -430,21 +555,8 @@ export const renderQuoteCard = async (
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 
-  // Background
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, width, height);
-
-  // Body text
-  const contentMaxWidth = Math.round(width * (1 - 2 * bodySideInsetRatio));
-
-  const { lines, lineHeight } = layoutBody(
-    ctx,
-    body,
-    stack,
-    contentMaxWidth,
-    bodySize,
-    BODY_WEIGHT,
-  );
 
   ctx.fillStyle = FG;
   ctx.font = `${BODY_WEIGHT} ${bodySize}px ${stack}`;
@@ -456,12 +568,8 @@ export const renderQuoteCard = async (
   // We compute the block as a unit so adding/removing the subtitle
   // doesn't shift the body off-center.
   const totalBodyHeight = lines.length * lineHeight;
-  const subtitleBlockHeight = subtitle ? subtitleGap + subtitleSize : 0;
   const blockHeight = totalBodyHeight + subtitleBlockHeight;
   const blockCenterY = Math.round(height * 0.45);
-  // First body baseline:
-  //   top of block = blockCenterY - blockHeight / 2
-  //   first baseline = top of block + lineHeight (since we measure from baseline)
   const firstBaseline = blockCenterY - blockHeight / 2 + lineHeight;
 
   lines.forEach((line, i) => {
@@ -469,7 +577,6 @@ export const renderQuoteCard = async (
     ctx.fillText(line, width / 2, firstBaseline + i * lineHeight);
   });
 
-  // Subtitle (book title · author), centered just below the body.
   if (subtitle) {
     const subtitleBaseline =
       firstBaseline + (lines.length - 1) * lineHeight + subtitleGap + subtitleSize;
@@ -479,10 +586,6 @@ export const renderQuoteCard = async (
     ctx.fillText(subtitle, width / 2, subtitleBaseline);
   }
 
-  // Wordmark watermark (bottom-center, slightly translucent). The
-  // artwork is rectangular (wider than tall) so we draw at its natural
-  // aspect ratio — never squashed into a square. Any load failure is
-  // silently skipped so a missing/blocked asset can't break the share.
   const logo = await logoPromise;
   if (logo && logo.naturalWidth > 0) {
     const aspect = logo.naturalHeight / logo.naturalWidth;
@@ -500,5 +603,14 @@ export const renderQuoteCard = async (
 
   const dataUrl = canvas.toDataURL("image/png");
   const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-  return { dataUrl, base64, width, height };
+  return {
+    dataUrl,
+    base64,
+    width,
+    height,
+    appliedSize: applied.size,
+    appliedBodySize: bodySize,
+    wasPromoted,
+    tooLong,
+  };
 };

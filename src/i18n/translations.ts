@@ -200,6 +200,10 @@ const ko: Dict = {
   "share.save_photo": "사진에 저장",
   "share.share": "공유",
   "share.generating": "이미지 생성 중...",
+  "share.promoted_notice":
+    "문장이 길어 세로형(9:16) 사이즈로 자동 전환했어요.",
+  "share.too_long_warning":
+    "문장이 매우 길어 일부가 잘릴 수 있어요. 긴 문장 분할 저장은 준비 중이에요.",
 };
 
 const en: Dict = {
@@ -369,6 +373,10 @@ const en: Dict = {
   "share.save_photo": "Save to Photos",
   "share.share": "Share",
   "share.generating": "Generating image...",
+  "share.promoted_notice":
+    "This quote is long — switched to the 9:16 story format automatically.",
+  "share.too_long_warning":
+    "This quote is very long and part of it may be clipped. Multi-page sharing is coming soon.",
 };
 
 const ja: Dict = {
@@ -538,6 +546,10 @@ const ja: Dict = {
   "share.save_photo": "写真に保存",
   "share.share": "共有",
   "share.generating": "画像生成中...",
+  "share.promoted_notice":
+    "文章が長いため、縦型 (9:16) サイズに自動切り替えしました。",
+  "share.too_long_warning":
+    "文章が非常に長いため、一部が切れる可能性があります。分割保存は近日対応予定です。",
 };
 
 export const translations: Record<Language, Dict> = { ko, en, ja };
