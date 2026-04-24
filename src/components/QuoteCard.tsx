@@ -168,11 +168,8 @@ const QuoteCard = ({
         WebkitTouchCallout: "none",
         WebkitUserSelect: "none",
       }}
-      className="glass rounded-2xl p-5 group relative overflow-hidden select-none"
+      className="glass rounded-2xl p-5 relative overflow-hidden select-none"
     >
-      {/* Subtle glow on hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-accent/5 to-transparent" />
-
       {/* Hidden measurement copy — same typography, no clamp, off-screen.
           Lets us compare actual line count against CLAMP_LINES without
           relying on the visible element's clamped scrollHeight. */}

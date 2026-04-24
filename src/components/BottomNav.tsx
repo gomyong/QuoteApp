@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, PlusCircle, BookOpen, Settings as SettingsIcon } from "lucide-react";
+import { Home, PlusCircle, Book, Settings as SettingsIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
@@ -11,7 +11,7 @@ const BottomNav = () => {
   const navItems = [
     { path: "/", icon: Home, labelKey: "nav.home" as const },
     { path: "/capture", icon: PlusCircle, labelKey: "nav.capture" as const },
-    { path: "/library", icon: BookOpen, labelKey: "nav.library" as const },
+    { path: "/library", icon: Book, labelKey: "nav.library" as const },
     { path: "/settings", icon: SettingsIcon, labelKey: "nav.settings" as const },
   ];
 
