@@ -210,7 +210,7 @@ const wrapLines = (
   maxWidth: number,
 ): string[] => {
   const CLAUSE_END = /[.,!?;:。、！？；：][\]\)"'\u201D\u2019]?$/;
-  const MIN_SOFT_FILL = 0.4;
+  const MIN_SOFT_FILL = 0.55;
 
   const paragraphs = text.split(/\r?\n/);
   const out: string[] = [];
