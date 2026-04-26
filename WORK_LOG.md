@@ -277,11 +277,73 @@ own permissions.
 
 ---
 
+### PR-Launch — Cost & security hardening for public release
+
+Three independent, fully-rollback-safe changes that prep the app for
+launch without changing solo-developer behavior at all (verified
+graceful degradation on missing config).
+
+**1. Multi-provider book search (Kakao → Naver → Google Books)**
+
+- Extracted `BookSearchProvider` interface in `src/features/books/types.ts`
+  + shared `textSimilarity.ts`. Each upstream now lives in its own
+  adapter file under `src/features/books/providers/`.
+- New orchestrator `bookSearchService.ts` chains adapters in priority
+  order, returning the first non-empty result set. Adapters report
+  `isEnabled()` based on env vars; missing keys silently skip the
+  adapter so the existing setup (no Kakao/Naver keys → Google only)
+  works identically.
+- Korean book hit rate jumps because Kakao's index is sourced from
+  교보문고 / 예스24. Google Books remains the universal fallback.
+- `useEnsureCovers` migrated to `fetchBestCoverMulti`; the legacy
+  `googleBooks.ts` is still exported (wrapped by `providers/google.ts`)
+  so any future caller can use either entry point.
+
+**2. IndexedDB cover-lookup cache (TTL 7d hit / 1d miss)**
+
+- New `bookSearchCache.ts` lives in a separate IndexedDB
+  (`quote-cache`) so a corrupt cache *cannot* affect the user-data
+  database (`quote-app`). Versioned independently for the same reason.
+- Both positive *and* negative results are cached — negative caching
+  prevents quota burn on books no upstream knows about.
+- "Settings → 표지 자동 찾기" retry button passes `bypassCache: true`
+  so users can force a fresh attempt at any time without waiting for
+  TTL.
+- All read/write errors fall back to live upstream calls — feature
+  degrades silently, never throws.
+
+**3. Supabase input hardening migration (`0003_input_hardening.sql`)**
+
+- Length CHECK constraints on `quotes.content/thoughts`, `books.title/
+  author/cover_url/isbn`, `profiles.display_name`, `tags.name`. Added
+  with `NOT VALID` so existing rows are not re-scanned and the
+  migration is non-blocking on any size of dataset.
+- Range CHECK on `quotes.page` (0..99999).
+- Partial index `quotes_user_active_updated_idx` on
+  `(user_id, updated_at desc) where deleted_at is null` to speed up
+  the dominant "load my recent quotes" query.
+- `supabase/README.md` now lists every migration in order plus a
+  Dashboard-only **pre-launch security checklist** (auth rate limits,
+  storage MIME / size caps, JWT expiry, redirect URLs).
+
+**Solo-user impact: zero**
+
+- Without `VITE_KAKAO_REST_KEY` / `VITE_NAVER_*` the orchestrator
+  resolves to "Google Books only" — identical to the pre-refactor
+  flow.
+- Cache layer is purely additive; cache miss == old behavior.
+- DB constraints are `NOT VALID`; no existing rows are checked.
+- Existing Supabase session unaffected by Dashboard checklist items
+  until they're applied.
+
 ## Follow-ups (not done yet)
 
 - Deep link / universal link for magic link return to the native app (`app.quote.note://` + Supabase redirect URLs).
 - PWA icon PNGs: add files under `public/icons/` per `public/icons/README.md`.
 - Voice (STT): still disabled in UI; can add Capacitor speech or Web Speech API later.
+- Multi-page split (Strategy C) for ultra-long share images.
+- After `0003_input_hardening.sql` is applied, audit existing rows then
+  run `VALIDATE CONSTRAINT` for each constraint added in that migration.
 
 ---
 
