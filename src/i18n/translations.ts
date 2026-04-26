@@ -149,11 +149,15 @@ const ko: Dict = {
   "settings.sync_recent": "최근 결과",
 
   // --- settings (cover retry)
-  "settings.covers": "표지 자동 찾기 (Google Books)",
+  "settings.covers": "표지 자동 찾기",
   "settings.covers_retry": "표지 다시 찾기",
   "settings.covers_searching": "찾는 중...",
   "settings.covers_desc":
-    "서재에 표지가 없는 책들을 Google Books에서 다시 검색해요. 인터넷 연결이 필요합니다.",
+    "표지가 없는 책은 카카오 → 네이버 → 구글 순으로 찾습니다. 카카오·네이버는 키가 있을 때만 먼저 쓰이고, 없으면 구글만 사용합니다. 키는 `.env.local`에 넣은 뒤 앱을 다시 빌드해야 반영됩니다. 인터넷이 필요합니다.",
+  "settings.covers_on": "사용",
+  "settings.covers_off": "미사용",
+  "settings.covers_providers_status":
+    "도서 API: 카카오 {kakao}, 네이버 {naver}, 구글 {google}",
   "settings.covers_total": "총 책",
   "settings.covers_already": "이미 표지 있음",
   "settings.covers_tried": "시도",
@@ -328,11 +332,15 @@ const en: Dict = {
   "settings.sync_pending_count": "{count}",
   "settings.sync_recent": "Recent",
 
-  "settings.covers": "Auto covers (Google Books)",
+  "settings.covers": "Auto covers",
   "settings.covers_retry": "Retry covers",
   "settings.covers_searching": "Searching...",
   "settings.covers_desc":
-    "Looks up covers on Google Books for books that don't have one. Requires an internet connection.",
+    "Missing covers are resolved in order: Kakao → Naver → Google. Kakao/Naver run only when API keys are set in `.env.local`; otherwise Google is used. Rebuild the app after changing env. Internet required.",
+  "settings.covers_on": "On",
+  "settings.covers_off": "Off",
+  "settings.covers_providers_status":
+    "Book APIs: Kakao {kakao}, Naver {naver}, Google {google}",
   "settings.covers_total": "Total books",
   "settings.covers_already": "Already have covers",
   "settings.covers_tried": "Tried",
@@ -503,11 +511,15 @@ const ja: Dict = {
   "settings.sync_pending_count": "{count}件",
   "settings.sync_recent": "最近の結果",
 
-  "settings.covers": "自動カバー (Google Books)",
+  "settings.covers": "自動カバー",
   "settings.covers_retry": "カバーを再取得",
   "settings.covers_searching": "検索中...",
   "settings.covers_desc":
-    "本棚にカバーのない本を Google Books で再検索します。インターネット接続が必要です。",
+    "カバーがない本は Kakao → Naver → Google の順で探します。Kakao/Naver は `.env.local` にキーがあるときだけ先に使われ、なければ Google のみです。キー変更後はアプリを再ビルドしてください。インターネットが必要です。",
+  "settings.covers_on": "利用",
+  "settings.covers_off": "未設定",
+  "settings.covers_providers_status":
+    "書籍API: Kakao {kakao}, Naver {naver}, Google {google}",
   "settings.covers_total": "本の合計",
   "settings.covers_already": "カバーあり",
   "settings.covers_tried": "試行",

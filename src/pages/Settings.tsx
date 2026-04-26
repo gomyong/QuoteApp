@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -20,6 +20,7 @@ import {
   retryMissingCovers,
   type RetryCoversResult,
 } from "@/features/books/useEnsureCovers";
+import { enabledProviders } from "@/features/books/bookSearchService";
 import {
   getSyncStatus,
   subscribeSyncStatus,
@@ -57,6 +58,17 @@ const Settings = () => {
   const [coverBusy, setCoverBusy] = useState(false);
   const [coverResult, setCoverResult] = useState<RetryCoversResult | null>(null);
   const formatRelative = useRelativeTime();
+
+  const coverProvidersLine = useMemo(() => {
+    const p = enabledProviders();
+    const state = (id: "kakao" | "naver" | "google") =>
+      p.find((x) => x.id === id)?.enabled ? t("settings.covers_on") : t("settings.covers_off");
+    return t("settings.covers_providers_status", {
+      kakao: state("kakao"),
+      naver: state("naver"),
+      google: state("google"),
+    });
+  }, [t, lang]);
 
   useEffect(() => {
     (async () => {
@@ -286,6 +298,9 @@ const Settings = () => {
 
           <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
             {t("settings.covers_desc")}
+          </p>
+          <p className="text-[11px] text-foreground/80 font-mono leading-relaxed mb-2">
+            {coverProvidersLine}
           </p>
 
           {coverResult && (
