@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { fetchBestCover } from "./googleBooks";
+import { fetchBestCoverMulti } from "./bookSearchService";
 import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
 import type { Book } from "@/sync/types";
@@ -8,8 +8,9 @@ import type { Book } from "@/sync/types";
 // session isn't hammered repeatedly. Keyed by book id.
 const attempted = new Set<string>();
 
-// Small concurrency limiter — Google Books rate-limits anonymous callers
-// fairly aggressively. 2 in flight is a safe default.
+// Small concurrency limiter — every upstream we chain (Kakao, Naver,
+// Google Books) rate-limits anonymous callers fairly aggressively. 2 in
+// flight is a safe default that respects all three.
 const MAX_CONCURRENT = 2;
 
 const mapLimit = async <T>(
@@ -66,7 +67,7 @@ export const useEnsureCovers = (
     void mapLimit(targets, MAX_CONCURRENT, async (book) => {
       if (cancelled) return;
       attempted.add(book.id);
-      const result = await fetchBestCover(book.title, book.author, {
+      const result = await fetchBestCoverMulti(book.title, book.author, {
         signal: ac.signal,
       });
       if (cancelled) return;
@@ -102,7 +103,7 @@ export const ensureCoverForBook = async (book: Book): Promise<boolean> => {
   if (book.cover_url || !book.title.trim()) return false;
   if (attempted.has(book.id)) return false;
   attempted.add(book.id);
-  const result = await fetchBestCover(book.title, book.author);
+  const result = await fetchBestCoverMulti(book.title, book.author);
   if (!result) {
     attempted.delete(book.id);
     return false;
@@ -164,7 +165,12 @@ export const retryMissingCovers = async (): Promise<RetryCoversResult> => {
   if (withoutCover.length === 0) return result;
 
   await mapLimit(withoutCover, MAX_CONCURRENT, async (book) => {
-    const r = await fetchBestCover(book.title, book.author);
+    // bypassCache: this is the explicit "retry" path — we want to
+    // ignore any negative cache entries from earlier sessions so the
+    // user gets a fresh attempt against every enabled provider.
+    const r = await fetchBestCoverMulti(book.title, book.author, {
+      bypassCache: true,
+    });
     const ok = !!r;
     if (r) {
       await repo.updateBookCover(book.id, r.coverUrl, r.isbn);
