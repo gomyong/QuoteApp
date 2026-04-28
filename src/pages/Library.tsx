@@ -150,8 +150,8 @@ const BookRow = ({ book, index }: BookRowProps) => {
     >
       <Link
         to={`/book/${book.id}`}
-        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
-        style={{ touchAction: "manipulation" }}
+        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] transition-transform"
+        style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
       >
         <div className="w-14 shrink-0 aspect-[2/3]">
           <BookCover
@@ -194,8 +194,8 @@ const UnassignedRow = ({ count, index }: { count: number; index: number }) => {
     >
       <Link
         to={`/book/${UNASSIGNED_ID}`}
-        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] hover:bg-glass-border/10 transition-all"
-        style={{ touchAction: "manipulation" }}
+        className="glass rounded-2xl p-3 flex items-center gap-4 active:scale-[0.99] transition-transform"
+        style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
       >
         <div className="w-14 shrink-0 aspect-[2/3] rounded-md border-2 border-dashed border-glass-border/50 bg-glass/20 flex items-center justify-center">
           <span className="text-muted-foreground text-base">📝</span>

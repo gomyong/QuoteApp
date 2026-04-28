@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, Glasses, Shuffle } from "lucide-react";
+import { ChevronDown, ChevronUp, PencilLine, Shuffle } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
@@ -64,7 +64,7 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
       <div className="relative p-7">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Glasses size={16} className="text-accent" />
+            <PencilLine size={16} className="text-accent" />
             <span className="text-accent text-xs font-medium tracking-wider uppercase">
               {t("home.daily_title")}
             </span>
