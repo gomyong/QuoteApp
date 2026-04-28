@@ -53,14 +53,15 @@ const normalizeAuthor = (author: string | null | undefined): string | null => {
  * Dedup rules:
  *  - Title normalization (see normalizeTitle) handles case/whitespace/
  *    punctuation drift so "데미안", " 데미안 ", "데미안." all collapse.
- *  - If the existing record has the same normalized title AND either
- *    (a) both authors are empty, (b) one side is empty, or (c) authors
- *    match after trim — we reuse it. When one side has the author and
- *    the other doesn't, we *merge* (fill in the missing author so the
- *    record is more complete).
- *  - If both sides have an author and they differ, we treat it as a
- *    genuinely different book (different edition / translator / same
- *    title different work) and create a new row.
+ *  - If the existing record has the same normalized title, we reuse it
+ *    even when the incoming author differs. In the actual capture flow,
+ *    retyping author/translator exactly is the biggest source of
+ *    accidental duplicates, so title is the stable identity once a book
+ *    already exists locally.
+ *  - When the existing record has no author and the incoming capture does,
+ *    we *merge* the author into the existing book. If both sides have an
+ *    author and they differ, we keep the existing author and still reuse
+ *    the book; we do not overwrite established metadata.
  *
  * The user_id guard used to split records across anon/logged-in states;
  * we've removed it. If a book already exists under the null-owner and
@@ -86,10 +87,11 @@ const upsertBookByTitle = async (
       found = candidates[0];
     } else {
       // Prefer exact author match, else a same-title record with no author
-      // yet (we'll fill it in), else leave as undefined (different edition).
+      // yet (we'll fill it in), else reuse the first same-title record.
       found =
         candidates.find((b) => normalizeAuthor(b.author) === normAuthor) ??
-        candidates.find((b) => !normalizeAuthor(b.author));
+        candidates.find((b) => !normalizeAuthor(b.author)) ??
+        candidates[0];
     }
   }
 

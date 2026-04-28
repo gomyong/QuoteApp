@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Mic, Type, BookOpen, Tag, Send, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
@@ -9,6 +9,7 @@ import { repo } from "@/sync/repo";
 import { syncOnce } from "@/sync/syncEngine";
 import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import type { Book } from "@/sync/types";
 
 const Capture = () => {
   const { t } = useTranslation();
@@ -20,7 +21,17 @@ const Capture = () => {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showOcr, setShowOcr] = useState(false);
+  const [recentBooks, setRecentBooks] = useState<Book[]>([]);
   const lastImageRef = useRef<PickedImage | null>(null);
+
+  const loadRecentBooks = async () => {
+    const books = await repo.listBooksWithCounts();
+    setRecentBooks(books.slice(0, 3));
+  };
+
+  useEffect(() => {
+    void loadRecentBooks();
+  }, []);
 
   const handleSave = async () => {
     if (!content.trim() || saving) return;
@@ -43,14 +54,15 @@ const Capture = () => {
       setSaved(true);
       void syncOnce();
 
-      // Fire-and-forget: pull a cover from Google Books for the linked book.
-      // Only touches the network when a *new* book was created (book_id set
-      // and cover still missing), so repeats are free.
+      // Fire-and-forget: pull a cover through the provider chain for the
+      // linked book. Repeats are cheap because ensureCoverForBook skips
+      // records that already have covers or were attempted this session.
       if (savedQuote.book_id) {
         void repo.getBook(savedQuote.book_id).then((b) => {
           if (b) void ensureCoverForBook(b);
         });
       }
+      void loadRecentBooks();
       setTimeout(() => {
         setSaved(false);
         setContent("");
@@ -138,6 +150,29 @@ const Capture = () => {
               placeholder={t("capture.book_title_placeholder")}
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none border-b border-border/30 pb-2"
             />
+            {recentBooks.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-[11px] text-muted-foreground">
+                  {t("capture.recent_books")}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {recentBooks.map((book) => (
+                    <button
+                      key={book.id}
+                      type="button"
+                      onClick={() => {
+                        setBookTitle(book.title);
+                        setAuthor(book.author ?? "");
+                      }}
+                      className="shrink-0 rounded-full bg-glass-border/10 px-3 py-1.5 text-xs text-foreground hover:bg-glass-border/20"
+                    >
+                      {book.title}
+                      {book.author ? ` · ${book.author}` : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <input
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
