@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -16,11 +16,7 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
-import {
-  retryMissingCovers,
-  type RetryCoversResult,
-} from "@/features/books/useEnsureCovers";
-import { enabledProviders } from "@/features/books/bookSearchService";
+import { retryMissingCovers } from "@/features/books/useEnsureCovers";
 import {
   getSyncStatus,
   subscribeSyncStatus,
@@ -56,19 +52,7 @@ const Settings = () => {
   const [busy, setBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
   const [coverBusy, setCoverBusy] = useState(false);
-  const [coverResult, setCoverResult] = useState<RetryCoversResult | null>(null);
   const formatRelative = useRelativeTime();
-
-  const coverProvidersLine = useMemo(() => {
-    const p = enabledProviders();
-    const state = (id: "kakao" | "naver" | "google") =>
-      p.find((x) => x.id === id)?.enabled ? t("settings.covers_on") : t("settings.covers_off");
-    return t("settings.covers_providers_status", {
-      kakao: state("kakao"),
-      naver: state("naver"),
-      google: state("google"),
-    });
-  }, [t, lang]);
 
   useEffect(() => {
     (async () => {
@@ -92,10 +76,8 @@ const Settings = () => {
 
   const triggerCoverRetry = async () => {
     setCoverBusy(true);
-    setCoverResult(null);
     try {
-      const r = await retryMissingCovers();
-      setCoverResult(r);
+      await retryMissingCovers();
     } finally {
       setCoverBusy(false);
     }
@@ -158,7 +140,10 @@ const Settings = () => {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${LANGUAGES.length}, minmax(0, 1fr))` }}
+          >
             {LANGUAGES.map((l) => {
               const active = lang === l.code;
               return (
@@ -281,7 +266,7 @@ const Settings = () => {
         </section>
 
         <section className="glass rounded-2xl p-4 mt-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookMarked size={14} className="text-accent" />
               <span className="text-sm text-foreground">{t("settings.covers")}</span>
@@ -296,73 +281,6 @@ const Settings = () => {
             </button>
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-            {t("settings.covers_desc")}
-          </p>
-          <p className="text-[11px] text-foreground/80 font-mono leading-relaxed mb-2">
-            {coverProvidersLine}
-          </p>
-
-          {coverResult && (
-            <dl className="text-xs text-muted-foreground space-y-1.5 pt-2 mt-2 border-t border-glass-border/20">
-              <div className="flex justify-between">
-                <dt>{t("settings.covers_total")}</dt>
-                <dd className="text-foreground">
-                  {t("settings.covers_book_count", { count: coverResult.totalBooks })}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>{t("settings.covers_already")}</dt>
-                <dd className="text-foreground">
-                  {t("settings.covers_book_count", { count: coverResult.alreadyCovered })}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>{t("settings.covers_tried")}</dt>
-                <dd className="text-foreground">
-                  {t("settings.covers_book_count", { count: coverResult.tried })}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>{t("settings.covers_result")}</dt>
-                <dd className="text-foreground">
-                  ↑{coverResult.updated} / ↓{coverResult.failed}
-                </dd>
-              </div>
-              {coverResult.entries.length > 0 && (
-                <div className="pt-2 mt-2 border-t border-glass-border/20 space-y-0.5">
-                  {coverResult.entries.slice(0, 12).map((entry) => (
-                    <div
-                      key={entry.bookId}
-                      className={
-                        entry.ok
-                          ? "text-foreground text-[11px] break-words"
-                          : "text-muted-foreground text-[11px] break-words"
-                      }
-                    >
-                      {entry.ok ? "✓" : "✗"} {entry.title}
-                      {entry.author ? ` / ${entry.author}` : ""} —{" "}
-                      {entry.ok
-                        ? t("settings.covers_match")
-                        : t("settings.covers_fail")}
-                    </div>
-                  ))}
-                  {coverResult.entries.length > 12 && (
-                    <div className="text-[11px] text-muted-foreground italic">
-                      {t("settings.covers_and_more", {
-                        count: coverResult.entries.length - 12,
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-              {coverResult.totalBooks === 0 && (
-                <div className="pt-1 text-[11px] text-muted-foreground italic">
-                  {t("settings.covers_no_books")}
-                </div>
-              )}
-            </dl>
-          )}
         </section>
         </div>
       </main>

@@ -93,6 +93,22 @@ npm run ios            # builds, syncs, opens Xcode → Run
 npm run android
 ```
 
+## Donation IAP (App Store only)
+
+This app is free by default. Optional donations should use **App Store
+In-App Purchase** only (no external payment links inside the app).
+
+Step-1 setup checklist is documented in:
+
+- `IAP_STEP1_APPSTORE_DONATION.md`
+
+After adding RevenueCat keys to `.env.local`, always rebuild+sync:
+
+```bash
+npm run build
+npx cap sync ios
+```
+
 ## Common issues
 
 - **Magic-link redirect goes nowhere on a phone**: ensure the link is opened in the same browser session. For Capacitor builds, plan to add deep linking later (`app.quote.note://`) and add the URL in Supabase Auth settings.

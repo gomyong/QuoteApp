@@ -72,7 +72,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       let chosen: Language = DEFAULT_LANGUAGE;
       try {
         const stored = await Preferences.get({ key: STORAGE_KEY });
-        if (stored.value === "ko" || stored.value === "en" || stored.value === "ja") {
+        if (stored.value === "ko" || stored.value === "en") {
           chosen = stored.value;
         } else {
           chosen = detectBrowserLanguage();
@@ -111,7 +111,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // Hide children until we've resolved the persisted language (typically
-  // <100ms). Prevents a flash of Korean for a user whose stored pref is JA.
+  // <100ms). Prevents a flash of Korean for a user whose stored pref is EN.
   if (!ready) return null;
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

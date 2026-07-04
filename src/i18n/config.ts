@@ -6,7 +6,7 @@
  * default language at runtime (see LanguageProvider).
  */
 
-export type Language = "ko" | "en" | "ja";
+export type Language = "ko" | "en";
 
 export const LANGUAGES: Array<{
   code: Language;
@@ -15,7 +15,6 @@ export const LANGUAGES: Array<{
 }> = [
   { code: "ko", label: "Korean", nativeLabel: "한국어" },
   { code: "en", label: "English", nativeLabel: "English" },
-  { code: "ja", label: "Japanese", nativeLabel: "日本語" },
 ];
 
 export const DEFAULT_LANGUAGE: Language = "ko";
@@ -36,7 +35,6 @@ export const detectBrowserLanguage = (): Language => {
     .filter(Boolean)
     .map((l) => l.toLowerCase());
   for (const l of locales) {
-    if (l.startsWith("ja")) return "ja";
     if (l.startsWith("en")) return "en";
     if (l.startsWith("ko")) return "ko";
   }
