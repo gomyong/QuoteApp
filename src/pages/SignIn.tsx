@@ -16,6 +16,7 @@ type Step = "email" | "code";
 type ErrorKey =
   | "signin.error_rate_limit"
   | "signin.error_expired"
+  | "signin.error_empty_code"
   | "signin.error_invalid_code"
   | "signin.error_generic";
 
@@ -44,9 +45,9 @@ const SignIn = () => {
 
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Supabase OTP length is configurable (6 to 10 digits). We accept the
-  // full range so the same app works regardless of the project's setting.
-  const MIN_CODE_LEN = 6;
+  // Supabase OTP length is project-configurable (typically 6–10 digits).
+  // Don't pin a digit count in the UI — just cap input length and let
+  // Supabase validate the token the user pasted from their email.
   const MAX_CODE_LEN = 10;
 
   // Jump to home once the session lands (deep link OR OTP code).
@@ -73,9 +74,9 @@ const SignIn = () => {
   const handleVerify = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const token = code.replace(/\D/g, "").slice(0, MAX_CODE_LEN);
-    if (token.length < MIN_CODE_LEN) {
+    if (!token) {
       setStatus("error");
-      setErrorKey("signin.error_invalid_code");
+      setErrorKey("signin.error_empty_code");
       return;
     }
     setStatus("verifying");
@@ -166,7 +167,7 @@ const SignIn = () => {
 
             <button
               type="submit"
-              disabled={status === "verifying" || code.length < MIN_CODE_LEN}
+              disabled={status === "verifying" || !code.length}
               className="w-full rounded-2xl py-4 flex items-center justify-center gap-2 font-medium bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-60"
             >
               {status === "verifying" ? (

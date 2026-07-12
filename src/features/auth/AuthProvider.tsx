@@ -25,7 +25,7 @@ type AuthState = {
   loading: boolean;
   signInWithMagicLink: (email: string) => Promise<{ error: string | null }>;
   /**
-   * Verify the 6-digit OTP code that Supabase includes in the same magic
+   * Verify the numeric OTP code that Supabase includes in the same magic
    * link email (as `{{ .Token }}`). Works without deep links — the user
    * types the code in the app and we call Supabase directly. This is the
    * most reliable path on iOS because it bypasses URL scheme config
