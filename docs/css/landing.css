@@ -7,12 +7,12 @@
   --primary-focus: #1e3a8a;
 
   /* Light surface ladder (Quote canvas, Linear-style hierarchy) */
-  --canvas: #f0f2f3;
+  --canvas: #f7f8f9;
   --surface-1: #ffffff;
-  --surface-2: #f7f8f9;
-  --surface-3: #eef0f1;
-  --hairline: #dee2e3;
-  --hairline-strong: #c8ccd0;
+  --surface-2: #fafbfb;
+  --surface-3: #f1f2f3;
+  --hairline: #e6e8ea;
+  --hairline-strong: #d0d3d6;
 
   --ink: #181a1f;
   --ink-muted: #3d4148;
@@ -23,10 +23,11 @@
   --max: 72rem;
   --font: "Pretendard Variable", Pretendard, Inter, -apple-system, system-ui, sans-serif;
 
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-xl: 16px;
-  --section: 6rem;
+  /* Near-square corners */
+  --r-md: 2px;
+  --r-lg: 3px;
+  --r-xl: 4px;
+  --section: 3.25rem;
 }
 
 *,
@@ -229,12 +230,12 @@ img {
 
 /* ——— Hero ——— */
 .hero {
-  padding: 5.5rem 0 3.5rem;
+  padding: 4.5rem 0 2.25rem;
 }
 
 .hero-copy {
   max-width: 40rem;
-  margin-bottom: 2.75rem;
+  margin-bottom: 2rem;
 }
 
 .hero-copy .display-xl {
@@ -332,8 +333,12 @@ img {
   padding: var(--section) 0;
 }
 
+.section + .section {
+  padding-top: 0.5rem;
+}
+
 .section-head {
-  margin-bottom: 2rem;
+  margin-bottom: 1.35rem;
   max-width: 36rem;
 }
 
@@ -448,7 +453,8 @@ img {
 
 /* ——— Contact ——— */
 .contact {
-  padding-bottom: calc(var(--section) + 1rem);
+  padding-top: 0.5rem;
+  padding-bottom: calc(var(--section) + 0.5rem);
 }
 
 .contact-panel {
@@ -611,7 +617,7 @@ img {
 
 @media (max-width: 768px) {
   :root {
-    --section: 4.5rem;
+    --section: 2.75rem;
   }
 
   .nav-links {
