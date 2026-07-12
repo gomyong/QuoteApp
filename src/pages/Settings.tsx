@@ -12,7 +12,6 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
-  Trash2,
   User,
   WifiOff,
 } from "lucide-react";
@@ -144,64 +143,14 @@ const Settings = () => {
             <span className="text-sm text-foreground">{t("settings.account")}</span>
           </div>
           {user ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground truncate">{user.email}</span>
-                <button
-                  onClick={signOut}
-                  className="text-xs px-3 py-1 rounded-full border border-glass-border/30 hover:bg-glass-border/10 inline-flex items-center gap-1 shrink-0"
-                >
-                  <LogOut size={12} /> {t("settings.sign_out")}
-                </button>
-              </div>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={deleting}
-                    className="w-full text-xs py-2.5 rounded-xl border border-destructive/40 text-destructive hover:bg-destructive/10 inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
-                  >
-                    {deleting ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" />
-                        {t("settings.delete_account_busy")}
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 size={12} />
-                        {t("settings.delete_account")}
-                      </>
-                    )}
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="max-w-[min(22rem,calc(100vw-2rem))] rounded-2xl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {t("settings.delete_account_confirm_title")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("settings.delete_account_confirm_body")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("settings.delete_account_cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={(e) => {
-                        e.preventDefault();
-                        void handleDeleteAccount();
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {t("settings.delete_account_confirm")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              {deleteError && (
-                <p className="text-[11px] text-destructive text-center">{deleteError}</p>
-              )}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-muted-foreground truncate">{user.email}</span>
+              <button
+                onClick={signOut}
+                className="text-xs px-3 py-1 rounded-full border border-glass-border/30 hover:bg-glass-border/10 inline-flex items-center gap-1 shrink-0"
+              >
+                <LogOut size={12} /> {t("settings.sign_out")}
+              </button>
             </div>
           ) : (
             <div className="flex items-center justify-between">
@@ -393,6 +342,59 @@ const Settings = () => {
             </button>
           </div>
         </section>
+
+        {/* Account deletion — quiet footer, only when signed in */}
+        {user && (
+          <div className="mt-8 mb-2 flex flex-col items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  className="text-[11px] text-muted-foreground/70 hover:text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <span className="inline-flex items-center gap-1.5 no-underline">
+                      <Loader2 size={11} className="animate-spin" />
+                      {t("settings.delete_account_busy")}
+                    </span>
+                  ) : (
+                    t("settings.delete_account")
+                  )}
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-[min(22rem,calc(100vw-2rem))] rounded-2xl border-glass-border/30 bg-background">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="font-display text-foreground">
+                    {t("settings.delete_account_confirm_title")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-muted-foreground">
+                    {t("settings.delete_account_confirm_body")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-full border-glass-border/30">
+                    {t("settings.delete_account_cancel")}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void handleDeleteAccount();
+                    }}
+                    className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
+                    {t("settings.delete_account_confirm")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            {deleteError && (
+              <p className="text-[11px] text-muted-foreground text-center px-4">
+                {deleteError}
+              </p>
+            )}
+          </div>
+        )}
         </div>
       </main>
       <BottomNav />
