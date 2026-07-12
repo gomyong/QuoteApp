@@ -98,4 +98,4 @@ once before opening signups to the public.
 6. **Storage → quote-images**
    - File size limit: 5 MB (covers the OCR source images).
    - Allowed MIME types: `image/jpeg, image/png, image/heic, image/webp`.
-7. **SQL:** confirm migrations **0001–0004** have all been applied.
+7. **SQL:** confirm migrations **0001–0005** have all been applied.
