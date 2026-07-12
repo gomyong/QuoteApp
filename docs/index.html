@@ -9,10 +9,7 @@
     content="책의 한 줄을 OCR로 빠르게 기록하고, 나만의 서재로 쌓아 가는 Quote."
   />
   <meta property="og:title" content="Quote — 손쉬운 독서 기록" />
-  <meta
-    property="og:description"
-    content="촬영하고, 문장을 고르고, 서재에 남기세요."
-  />
+  <meta property="og:description" content="촬영하고, 문장을 고르고, 서재에 남기세요." />
   <meta property="og:type" content="website" />
   <link
     rel="stylesheet"
@@ -26,18 +23,13 @@
       <a class="brand" href="#">Quote</a>
       <nav class="nav-links" aria-label="주요 메뉴">
         <a href="#features">Features</a>
-        <a href="#archive">Library</a>
+        <a href="#product">Product</a>
         <a href="#contact">Contact</a>
       </nav>
-      <div style="display: flex; align-items: center; gap: 0.5rem">
-        <a class="btn btn-primary nav-cta" href="#download">Download</a>
-        <button
-          type="button"
-          class="nav-toggle"
-          aria-label="메뉴"
-          aria-expanded="false"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="nav-actions">
+        <a class="btn btn-primary" href="#download">Download</a>
+        <button type="button" class="nav-toggle" aria-label="메뉴" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>
@@ -45,113 +37,166 @@
     </div>
   </header>
 
-  <section class="hero" id="download" aria-label="소개">
-    <div class="hero-media" role="img" aria-label="책을 읽는 분위기"></div>
-    <div class="wrap hero-inner">
-      <h1 class="hero-brand">Quote</h1>
-      <p class="hero-lead">손쉬운 독서 기록</p>
-      <p class="hero-sub">
-        카메라로 책의 문장을 담고, OCR로 골라 저장하세요. 오프라인에서도 쌓이고,
-        로그인하면 기기 사이로 동기화됩니다.
-      </p>
-      <div class="hero-actions">
-        <!-- Replace href when the App Store listing is live -->
-        <a class="btn btn-on-navy" href="#download" id="app-store-link">App Store</a>
-        <a class="btn btn-ghost-light" href="#contact">문의하기</a>
-      </div>
-    </div>
-  </section>
-
-  <section id="features">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>기록의 흐름</h2>
-        <p>촬영부터 서재까지, 읽는 리듬을 끊지 않는 세 단계.</p>
-      </div>
-      <div class="features-grid">
-        <article>
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M4 7a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 10 3h4a1 1 0 0 1 .8.4L16 5h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
-              <circle cx="12" cy="13" r="3.5" />
-            </svg>
+  <main>
+    <!-- Hero: Linear-style — display headline + product panel, no lifestyle photo -->
+    <section class="hero" id="download" aria-label="소개">
+      <div class="wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Reading notes</p>
+          <h1 class="display-xl">손쉬운 독서 기록,<br />Quote</h1>
+          <p class="subhead">
+            카메라로 책의 문장을 담고, OCR로 골라 저장하세요.
+            오프라인에서도 쌓이고, 로그인하면 기기 사이로 동기화됩니다.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#download" id="app-store-link">App Store</a>
+            <a class="btn btn-secondary" href="#contact">문의하기</a>
           </div>
-          <h3>Capture</h3>
-          <p>책장을 찍거나 앨범에서 고르면, 바로 문장 인식으로 이어집니다.</p>
-        </article>
-        <article>
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M5 5h6v14H5zM13 5h6M13 12h5M13 19h4" />
-            </svg>
-          </div>
-          <h3>Extract</h3>
-          <p>인식된 문장 중 남기고 싶은 줄만 골라 다듬을 수 있어요.</p>
-        </article>
-        <article>
-          <div class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M6 4h10a2 2 0 0 1 2 2v14l-7-3.5L4 20V6a2 2 0 0 1 2-2z" />
-            </svg>
-          </div>
-          <h3>Save</h3>
-          <p>책 단위로 쌓이는 나만의 서재. 오늘의 문장으로 다시 꺼내 보세요.</p>
-        </article>
-      </div>
-    </div>
-  </section>
+        </div>
 
-  <section class="archive" id="archive">
-    <div class="wrap archive-layout">
-      <div class="archive-visual" role="img" aria-label="서가와 노트 분위기"></div>
-      <div class="archive-copy">
-        <h2>기록 그 이상의 가치</h2>
-        <p>
-          Quote는 하이라이트를 모아 두는 것을 넘어, 다시 읽고 싶은 문장을
-          가까이 두는 개인적인 지식 아카이브입니다.
-        </p>
-        <ul class="archive-points">
-          <li>오프라인 우선 — 비행기 모드에서도 기록과 열람</li>
-          <li>로그인 시 기기 간 동기화</li>
-          <li>표지 자동 매칭으로 서재가 채워짐</li>
-        </ul>
+        <div class="product-panel" aria-hidden="true">
+          <div class="product-chrome">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="product-screen">
+            <article class="mock-row">
+              <div class="mock-mark"></div>
+              <div>
+                <p class="mock-quote">“읽는다는 것은 다른 사람의 생각을 빌려 생각하는 일이다.”</p>
+                <p class="mock-meta">데카르트 · 방법서설</p>
+              </div>
+              <div class="mock-fav"></div>
+            </article>
+            <article class="mock-row">
+              <div class="mock-mark"></div>
+              <div>
+                <p class="mock-quote">“책은 한 권의 세계다. 그 속에 들어가 길을 잃을 수 있다.”</p>
+                <p class="mock-meta">알베르 카뮈</p>
+              </div>
+              <div class="mock-fav" style="opacity: 0.25"></div>
+            </article>
+            <article class="mock-row">
+              <div class="mock-mark"></div>
+              <div>
+                <p class="mock-quote">“기록하지 않으면, 읽은 것은 결국 사라진다.”</p>
+                <p class="mock-meta">오늘의 문장</p>
+              </div>
+              <div class="mock-fav"></div>
+            </article>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="contact" id="contact">
-    <div class="wrap contact-layout">
-      <div>
-        <h2>궁금한 점이 있으신가요?</h2>
-        <p class="lede">
-          앱 사용, 로그인, 동기화, 계정 삭제에 대한 문의는 아래 양식으로 남겨 주세요.
-          확인 후 이메일로 답변드립니다.
-        </p>
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Workflow</p>
+          <h2 class="display-md">기록의 흐름</h2>
+          <p class="subhead">촬영부터 서재까지, 읽는 리듬을 끊지 않는 세 단계.</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature-card">
+            <div class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M4 7a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 10 3h4a1 1 0 0 1 .8.4L16 5h2a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+                <circle cx="12" cy="13" r="3.5" />
+              </svg>
+            </div>
+            <h3 class="card-title">Capture</h3>
+            <p class="body-sm">책장을 찍거나 앨범에서 고르면, 바로 문장 인식으로 이어집니다.</p>
+          </article>
+          <article class="feature-card">
+            <div class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M5 5h6v14H5zM13 5h6M13 12h5M13 19h4" />
+              </svg>
+            </div>
+            <h3 class="card-title">Extract</h3>
+            <p class="body-sm">인식된 문장 중 남기고 싶은 줄만 골라 다듬을 수 있어요.</p>
+          </article>
+          <article class="feature-card">
+            <div class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M6 4h10a2 2 0 0 1 2 2v14l-7-3.5L4 20V6a2 2 0 0 1 2-2z" />
+              </svg>
+            </div>
+            <h3 class="card-title">Save</h3>
+            <p class="body-sm">책 단위로 쌓이는 나만의 서재. 오늘의 문장으로 다시 꺼내 보세요.</p>
+          </article>
+        </div>
       </div>
-      <form class="contact-form" id="contact-form" novalidate>
-        <div class="hp" aria-hidden="true">
-          <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off" /></label>
+    </section>
+
+    <section class="section" id="product">
+      <div class="wrap value-grid">
+        <div class="value-panel">
+          <p class="eyebrow">Archive</p>
+          <h2 class="display-md">기록 그 이상의 가치</h2>
+          <p class="subhead">
+            하이라이트를 모아 두는 것을 넘어, 다시 읽고 싶은 문장을
+            가까이 두는 개인적인 지식 아카이브입니다.
+          </p>
+          <ul class="value-list">
+            <li>오프라인 우선 — 비행기 모드에서도 기록과 열람</li>
+            <li>로그인 시 기기 간 동기화</li>
+            <li>표지 자동 매칭으로 서재가 채워짐</li>
+          </ul>
         </div>
-        <div class="field">
-          <label for="name">성함</label>
-          <input id="name" name="name" type="text" maxlength="100" required placeholder="홍길동" autocomplete="name" />
+        <div class="value-visual" aria-hidden="true">
+          <div class="mini-card">
+            <strong>오늘의 문장</strong>
+            <p class="body-sm">서재에서 하루 한 줄을 다시 꺼냅니다.</p>
+          </div>
+          <div class="mini-card">
+            <strong>문장 편집</strong>
+            <p class="body-sm">인식 결과를 다듬고 페이지·메모를 붙입니다.</p>
+          </div>
+          <div class="mini-card">
+            <strong>나만의 서재</strong>
+            <p class="body-sm">책 표지와 함께 기록이 쌓입니다.</p>
+          </div>
         </div>
-        <div class="field">
-          <label for="email">이메일 주소</label>
-          <input id="email" name="email" type="email" maxlength="254" required placeholder="you@example.com" autocomplete="email" />
+      </div>
+    </section>
+
+    <section class="section contact" id="contact">
+      <div class="wrap">
+        <div class="contact-panel">
+          <div class="contact-copy">
+            <p class="eyebrow">Support</p>
+            <h2 class="display-md">궁금한 점이 있으신가요?</h2>
+            <p class="subhead">
+              앱 사용, 로그인, 동기화, 계정 삭제에 대한 문의는 아래 양식으로 남겨 주세요.
+              확인 후 이메일로 답변드립니다.
+            </p>
+          </div>
+          <form class="contact-form" id="contact-form" novalidate>
+            <div class="hp" aria-hidden="true">
+              <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off" /></label>
+            </div>
+            <div class="field">
+              <label for="name">성함</label>
+              <input id="name" name="name" type="text" maxlength="100" required placeholder="홍길동" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="email">이메일 주소</label>
+              <input id="email" name="email" type="email" maxlength="254" required placeholder="you@example.com" autocomplete="email" />
+            </div>
+            <div class="field">
+              <label for="message">문의 내용</label>
+              <textarea id="message" name="message" rows="4" maxlength="4000" required placeholder="문의하실 내용을 적어 주세요."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="contact-submit">문의 보내기</button>
+              <span class="form-note">보통 영업일 기준 며칠 내에 답변드려요.</span>
+            </div>
+            <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+          </form>
         </div>
-        <div class="field">
-          <label for="message">문의 내용</label>
-          <textarea id="message" name="message" rows="4" maxlength="4000" required placeholder="문의하실 내용을 적어 주세요."></textarea>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-on-navy" id="contact-submit">문의 보내기</button>
-          <span class="form-note">보통 영업일 기준 며칠 내에 답변드려요.</span>
-        </div>
-        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-      </form>
-    </div>
-  </section>
+      </div>
+    </section>
+  </main>
 
   <footer class="site-footer">
     <div class="wrap footer-grid">
@@ -161,14 +206,12 @@
       </div>
       <div class="footer-cols">
         <div>
-          <h3>POLICY</h3>
+          <h3>Policy</h3>
           <a href="./privacy.html">Privacy Policy</a>
-          <a href="./privacy.html#en">Terms (see Privacy)</a>
         </div>
         <div>
-          <h3>SUPPORT</h3>
+          <h3>Support</h3>
           <a href="#contact">Contact</a>
-          <a href="./support.html">Support</a>
         </div>
       </div>
     </div>
