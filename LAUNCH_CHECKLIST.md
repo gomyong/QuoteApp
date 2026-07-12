@@ -5,12 +5,13 @@ Most launch blockers are fixed in code. You only need to do the
 
 ---
 
-## Already done in the app (this PR)
+## Already done in the app / site
 
-- [x] In-app **Delete account** (Settings) + local data wipe
-- [x] SQL migration `0004_delete_own_account.sql`
+- [x] In-app **Delete account** (Settings footer) + local data wipe
+- [x] SQL migrations `0004_delete_own_account.sql`, `0005_contact_inquiries.sql`
 - [x] In-app **Privacy Policy** (`/#/privacy`) + public HTML in `docs/`
-- [x] Support page HTML in `docs/support.html`
+- [x] Marketing landing at `docs/index.html` (GitHub Pages)
+- [x] Contact form → Supabase `contact_inquiries` (no GitHub Issues)
 - [x] Docs: correct redirect URL `app.quote.note://auth/callback`
 - [x] Bilingual camera/photo permission strings + export compliance flag
 - [x] IAP/donation deferred for v1 (docs only — no in-app tip UI)
@@ -19,11 +20,14 @@ Most launch blockers are fixed in code. You only need to do the
 
 ## You must do (≈15–20 minutes)
 
-### A. Supabase SQL (required for account deletion)
+### A. Supabase SQL (required)
 
 1. Open [SQL Editor](https://supabase.com/dashboard/project/ugzwobdupgajmzkplvel/sql/new)
-2. Paste **entire** contents of `supabase/migrations/0004_delete_own_account.sql` → **Run**
-3. If not already applied, also run `0003_input_hardening.sql` the same way
+2. Run (if not already) `0003_input_hardening.sql`
+3. Run `0004_delete_own_account.sql` (account deletion)
+4. Run **`0005_contact_inquiries.sql`** (landing contact form)
+
+문의 확인: Dashboard → **Table Editor** → `contact_inquiries`
 
 ### B. Supabase Auth redirect (magic-link return)
 
@@ -34,28 +38,20 @@ Most launch blockers are fixed in code. You only need to do the
 app.quote.note://auth/callback
 ```
 
-(OTP 숫자 입력 로그인은 이 설정 없이도 됩니다. 메일 **링크**를 눌러 돌아올 때만 필요합니다.)
-
 ### C. Magic Link email template (optional polish)
 
 **Authentication → Email Templates → Magic Link**  
 본문에 `{{ .Token }}` 이 있는지 확인하고, “6자리” 같은 고정 자릿수 문구는 지우세요.
 
-### D. GitHub Pages (Privacy / Support URL for App Store Connect)
-
-코드 푸시 후 Pages가 켜져 있으면 아래 URL을 씁니다:
+### D. App Store Connect URLs
 
 | ASC 필드 | URL |
 |----------|-----|
 | **Privacy Policy URL** | https://gomyong.github.io/QuoteApp/privacy.html |
-| **Support URL** | https://gomyong.github.io/QuoteApp/support.html |
+| **Support URL** | https://gomyong.github.io/QuoteApp/#contact |
+| **Marketing URL** (선택) | https://gomyong.github.io/QuoteApp/ |
 
-Pages 설정 (한 번만):
-
-1. GitHub → **QuoteApp** → **Settings** → **Pages**
-2. Source: **Deploy from a branch**
-3. Branch: `main` / folder: `/docs` → Save
-4. 1–2분 뒤 위 URL이 열리는지 확인
+랜딩: https://gomyong.github.io/QuoteApp/
 
 ### E. App Store Connect (출시 메타)
 
@@ -73,17 +69,10 @@ Pages 설정 (한 번만):
 Sign-in: enter email → open inbox → type the numeric code from the email
 (or tap the magic link). Camera is used for OCR. Offline works without login.
 Account deletion: Settings → Delete account.
+Support: https://gomyong.github.io/QuoteApp/#contact
 ```
 
----
-
-## Redirect URL FAQ
-
-**Q. OTP 자릿수 수정하면서 생긴 버그인가요?**  
-**A. 아닙니다.** 예전 문서에 `login-callback`이라고 잘못 적혀 있었고, 앱 코드는 처음부터 `auth/callback`을 씁니다. 문서만 고쳤습니다.
-
-**Q. 지금 당장 안 고치면?**  
-숫자 코드 로그인은 그대로 됩니다. **메일 속 링크**로 앱에 돌아오는 경로만 실패할 수 있습니다.
+5. App Store 링크가 나오면 랜딩의 `#download` / App Store 버튼을 실 URL로 교체
 
 ---
 

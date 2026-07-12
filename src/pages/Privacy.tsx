@@ -75,7 +75,7 @@ const Privacy = () => {
           <p className="text-sm">
             <a
               className="text-accent underline"
-              href="https://github.com/gomyong/QuoteApp/issues"
+              href="https://gomyong.github.io/QuoteApp/#contact"
               target="_blank"
               rel="noreferrer"
             >

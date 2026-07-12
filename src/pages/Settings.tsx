@@ -41,7 +41,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { LANGUAGES, type Language } from "@/i18n/config";
 
 /** Public support URL (GitHub Pages on QuoteApp). */
-const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/support.html";
+const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/#contact";
 
 /** Human-friendly "N minutes ago"-style formatting via i18n keys. */
 const useRelativeTime = () => {

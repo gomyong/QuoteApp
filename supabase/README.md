@@ -14,6 +14,7 @@ need newly added files.
 | 0002 | `0002_add_is_favorite.sql`      | Add `is_favorite` column to `quotes`                           |
 | 0003 | `0003_input_hardening.sql`      | Length / range CHECK constraints (`NOT VALID`) + partial index |
 | 0004 | `0004_delete_own_account.sql`   | `delete_own_account()` RPC for App Store account deletion      |
+| 0005 | `0005_contact_inquiries.sql`    | Landing contact form table (anon insert-only RLS)              |
 
 ### Option A — Supabase Dashboard (fastest)
 
@@ -65,6 +66,15 @@ The migration creates a private bucket `quote-images` and per-user RLS policies 
 require objects to be stored under `{user_id}/...`.
 
 Account deletion (`delete_own_account`) also removes that user’s objects in this bucket.
+
+## Landing contact form
+
+Migration `0005_contact_inquiries.sql` creates `public.contact_inquiries`.
+
+- The GitHub Pages landing (`docs/`) posts via the **anon** key.
+- RLS allows **INSERT only** for `anon` / `authenticated`. There is no public SELECT.
+- Read submissions in Dashboard → **Table Editor** → `contact_inquiries`.
+- Config: `docs/js/supabase-config.js` (see `supabase-config.example.js`).
 
 ## Pre-launch security checklist (Dashboard items)
 

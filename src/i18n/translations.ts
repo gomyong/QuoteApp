@@ -208,7 +208,7 @@ const ko: Dict = {
   "privacy.s4_body":
     "설정에서 계정 삭제를 요청하면 계정·동기화 데이터·관련 클라우드 이미지와 이 기기 앱 데이터가 삭제됩니다.",
   "privacy.s5_title": "5. 문의",
-  "privacy.s5_contact": "GitHub Issues로 문의하기",
+  "privacy.s5_contact": "웹사이트에서 문의하기",
 
   // --- book detail
   "book.unknown_title": "제목 없음",
@@ -432,7 +432,7 @@ const en: Dict = {
   "privacy.s4_body":
     "Delete account in Settings removes your account, synced data, related cloud images, and local app data on this device.",
   "privacy.s5_title": "5. Contact",
-  "privacy.s5_contact": "Contact via GitHub Issues",
+  "privacy.s5_contact": "Contact via the website",
 
   "book.unknown_title": "Untitled",
   "book.back_label": "Back",
@@ -652,7 +652,7 @@ const ja: Dict = {
   "privacy.s4_body":
     "設定のアカウント削除で、アカウント・同期データ・関連クラウド画像とこの端末のアプリデータが削除されます。",
   "privacy.s5_title": "5. お問い合わせ",
-  "privacy.s5_contact": "GitHub Issues で問い合わせる",
+  "privacy.s5_contact": "ウェブサイトから問い合わせる",
 
   "book.unknown_title": "タイトルなし",
   "book.back_label": "戻る",
