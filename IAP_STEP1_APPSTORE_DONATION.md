@@ -1,5 +1,9 @@
 # App Store Launch — Step 1 (Donation IAP)
 
+> **v1 status:** Donation UI is **deferred**. Ship the free app first without
+> tip copy in the binary or App Store listing. Complete this doc when you
+> are ready for a follow-up release that adds “후원하기”.
+
 Scope of this step:
 - Store is App Store only.
 - Base app remains free.

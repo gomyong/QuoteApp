@@ -14,6 +14,8 @@ This guide covers the three distribution paths the app supports today, in order 
 - A Supabase project (already provisioned). SQL migrations applied:
   - `supabase/migrations/0001_init.sql`
   - `supabase/migrations/0002_add_is_favorite.sql`
+  - `supabase/migrations/0003_input_hardening.sql`
+  - `supabase/migrations/0004_delete_own_account.sql` (required for in-app account deletion)
 - `.env.local` contains:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
@@ -93,25 +95,22 @@ npm run ios            # builds, syncs, opens Xcode → Run
 npm run android
 ```
 
-## Donation IAP (App Store only)
+## Donation IAP (App Store only) — deferred for v1
 
-This app is free by default. Optional donations should use **App Store
-In-App Purchase** only (no external payment links inside the app).
+The shipping v1 app is **free with no in-app tip UI**. Optional donations
+(RevenueCat + StoreKit) are planned later; see
+`IAP_STEP1_APPSTORE_DONATION.md` when you are ready.
 
-Step-1 setup checklist is documented in:
-
-- `IAP_STEP1_APPSTORE_DONATION.md`
-
-After adding RevenueCat keys to `.env.local`, always rebuild+sync:
-
-```bash
-npm run build
-npx cap sync ios
-```
+Do **not** mention tips/donations in App Store metadata until the purchase
+flow ships.
 
 ## Common issues
 
-- **Magic-link redirect goes nowhere on a phone**: ensure the link is opened in the same browser session. For Capacitor builds, plan to add deep linking later (`app.quote.note://`) and add the URL in Supabase Auth settings.
+- **Magic-link redirect goes nowhere on a phone**: whitelist
+  `app.quote.note://auth/callback` in Supabase → Authentication → URL
+  Configuration → Redirect URLs. OTP code entry in the app still works
+  without this. See `LAUNCH_CHECKLIST.md`.
 - **OCR is slow on the web first time**: `tesseract.js` downloads Korean+English language data on first run. After that it's cached.
 - **iOS camera blocked**: confirm `NSCameraUsageDescription` is present in `ios/App/App/Info.plist` (run `npm run ios:patch`).
 - **Storage upload fails with "row-level security"**: verify the bucket `quote-images` exists and the storage policies from `0001_init.sql` are applied.
+- **Delete account fails**: apply `0004_delete_own_account.sql` in the SQL Editor.

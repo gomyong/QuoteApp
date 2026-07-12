@@ -13,6 +13,7 @@ need newly added files.
 | 0001 | `0001_init.sql`                 | Tables (`profiles`, `books`, `quotes`, `tags`), RLS, storage   |
 | 0002 | `0002_add_is_favorite.sql`      | Add `is_favorite` column to `quotes`                           |
 | 0003 | `0003_input_hardening.sql`      | Length / range CHECK constraints (`NOT VALID`) + partial index |
+| 0004 | `0004_delete_own_account.sql`   | `delete_own_account()` RPC for App Store account deletion      |
 
 ### Option A — Supabase Dashboard (fastest)
 
@@ -28,21 +29,42 @@ npx supabase link --project-ref ugzwobdupgajmzkplvel
 npx supabase db push
 ```
 
-## Configure Auth (magic link)
+## Configure Auth (magic link + OTP)
 
 In **Authentication → URL Configuration**:
 
-- Site URL: your deployed web URL (or `http://localhost:8080` for dev)
-- Additional Redirect URLs: include the same URLs you'll use for native (e.g.
-  `app.quote.note://` once we wire deep links). For now, the web/origin URL is enough.
+| Field | Value |
+| ----- | ----- |
+| Site URL | Your web origin (or `http://localhost:8080` for local web) |
+| Additional Redirect URLs | **`app.quote.note://auth/callback`** (required for native magic-link return) |
 
-In **Authentication → Email templates → Magic Link**, ensure the `{{ .ConfirmationURL }}`
-is used. The default works.
+Also add any web origins you use (e.g. `http://localhost:8080/#/`).
+
+> **Important:** The correct native callback is `app.quote.note://auth/callback`.
+> Do **not** use `login-callback` — that was an outdated docs typo and does not
+> match the app (`AuthProvider.tsx` / `DeepLinkHandler.tsx`).
+>
+> OTP code login in the app works even if the redirect URL is wrong. Magic-link
+> tap-to-open only works when this URL is whitelisted.
+
+In **Authentication → Email Templates → Magic Link**, include both:
+
+- `{{ .ConfirmationURL }}` (link)
+- `{{ .Token }}` (numeric code)
+
+Example line (no fixed digit count — Supabase may use 6–10 digits):
+
+```html
+<p>Or enter this code in the app:</p>
+<p style="font-size:22px;font-weight:bold;letter-spacing:4px;">{{ .Token }}</p>
+```
 
 ## Storage
 
 The migration creates a private bucket `quote-images` and per-user RLS policies that
 require objects to be stored under `{user_id}/...`.
+
+Account deletion (`delete_own_account`) also removes that user’s objects in this bucket.
 
 ## Pre-launch security checklist (Dashboard items)
 
@@ -56,8 +78,8 @@ once before opening signups to the public.
    - Magic link: 4 / hour per IP (default is fine for solo, raise gradually)
    - Sign-ups: 30 / hour per IP
 3. **Authentication → URL Configuration**
-   - Site URL = production web origin
-   - Additional Redirect URLs include `app.quote.note://login-callback`
+   - Site URL = production web origin (or localhost for now)
+   - Additional Redirect URLs include **`app.quote.note://auth/callback`**
 4. **Project Settings → API → JWT Settings**
    - JWT expiry: 3600s (1h) is fine; refresh handles the rest.
 5. **Project Settings → Database → Connection pooling**
@@ -66,3 +88,4 @@ once before opening signups to the public.
 6. **Storage → quote-images**
    - File size limit: 5 MB (covers the OCR source images).
    - Allowed MIME types: `image/jpeg, image/png, image/heic, image/webp`.
+7. **SQL:** confirm migrations **0001–0004** have all been applied.

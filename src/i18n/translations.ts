@@ -132,6 +132,17 @@ const ko: Dict = {
   "settings.not_signed_in": "로그인하지 않음 (로컬 저장만)",
   "settings.sign_in": "로그인",
   "settings.sign_out": "로그아웃",
+  "settings.delete_account": "계정 삭제",
+  "settings.delete_account_confirm_title": "계정을 삭제할까요?",
+  "settings.delete_account_confirm_body":
+    "클라우드에 동기화된 기록·이미지와 이 기기의 앱 데이터가 삭제됩니다. 되돌릴 수 없어요.",
+  "settings.delete_account_confirm": "삭제하기",
+  "settings.delete_account_cancel": "취소",
+  "settings.delete_account_busy": "삭제 중...",
+  "settings.delete_account_error": "계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요.",
+  "settings.legal": "정보",
+  "settings.privacy": "개인정보 처리방침",
+  "settings.support": "고객 지원",
 
   // --- settings (storage)
   "settings.store_images": "원본 이미지 보관",
@@ -173,6 +184,31 @@ const ko: Dict = {
   "settings.covers_match": "표지 매칭",
   "settings.covers_fail": "매칭 실패",
   "settings.covers_and_more": "...외 {count}건",
+
+  // --- privacy (in-app)
+  "privacy.title": "개인정보 처리방침",
+  "privacy.updated": "최종 업데이트: 2026-07-12",
+  "privacy.intro":
+    "Quote는 책의 문장을 기록·보관하는 앱입니다. 아래는 수집·이용·삭제에 관한 안내입니다.",
+  "privacy.s1_title": "1. 수집하는 정보",
+  "privacy.s1_email": "이메일 — 로그인(매직 링크 / 인증 코드) 시",
+  "privacy.s1_content": "문장, 메모, 책 제목·저자 등 사용자가 저장한 콘텐츠",
+  "privacy.s1_photos":
+    "사진 — OCR용. ‘원본 이미지 보관’을 켠 경우에만 클라우드에 업로드될 수 있음",
+  "privacy.s1_local": "기기 로컬 저장(오프라인용)",
+  "privacy.s2_title": "2. 이용 목적",
+  "privacy.s2_auth": "계정 인증 및 기기 간 동기화",
+  "privacy.s2_quotes": "문장 기록·서재 관리",
+  "privacy.s2_covers": "책 표지 자동 매칭(외부 도서 API)",
+  "privacy.s3_title": "3. 제3자",
+  "privacy.s3_supabase": "Supabase — 인증, DB, (선택) 이미지 저장",
+  "privacy.s3_books": "Google Books 및(설정 시) Kakao/Naver 도서 API",
+  "privacy.s3_no_ads": "광고·추적 SDK는 쓰지 않으며, 개인정보를 판매하지 않습니다.",
+  "privacy.s4_title": "4. 보관 및 삭제",
+  "privacy.s4_body":
+    "설정에서 계정 삭제를 요청하면 계정·동기화 데이터·관련 클라우드 이미지와 이 기기 앱 데이터가 삭제됩니다.",
+  "privacy.s5_title": "5. 문의",
+  "privacy.s5_contact": "GitHub Issues로 문의하기",
 
   // --- book detail
   "book.unknown_title": "제목 없음",
@@ -325,6 +361,17 @@ const en: Dict = {
   "settings.not_signed_in": "Not signed in (local only)",
   "settings.sign_in": "Sign in",
   "settings.sign_out": "Sign out",
+  "settings.delete_account": "Delete account",
+  "settings.delete_account_confirm_title": "Delete your account?",
+  "settings.delete_account_confirm_body":
+    "Synced cloud records, images, and local app data on this device will be removed. This cannot be undone.",
+  "settings.delete_account_confirm": "Delete",
+  "settings.delete_account_cancel": "Cancel",
+  "settings.delete_account_busy": "Deleting...",
+  "settings.delete_account_error": "Couldn’t delete the account. Please try again shortly.",
+  "settings.legal": "About",
+  "settings.privacy": "Privacy Policy",
+  "settings.support": "Support",
 
   "settings.store_images": "Keep original photos",
   "settings.store_images_desc": "When off, photos are discarded after OCR",
@@ -362,6 +409,30 @@ const en: Dict = {
   "settings.covers_match": "matched",
   "settings.covers_fail": "no match",
   "settings.covers_and_more": "...and {count} more",
+
+  "privacy.title": "Privacy Policy",
+  "privacy.updated": "Last updated: 2026-07-12",
+  "privacy.intro":
+    "Quote helps you capture lines from books. This page explains what we collect and how you can delete it.",
+  "privacy.s1_title": "1. Information we collect",
+  "privacy.s1_email": "Email — when you sign in (magic link / verification code)",
+  "privacy.s1_content": "Quotes, notes, book titles/authors, and related content you save",
+  "privacy.s1_photos":
+    "Photos for OCR — cloud upload only if “Keep original photos” is on",
+  "privacy.s1_local": "On-device storage for offline use",
+  "privacy.s2_title": "2. How we use it",
+  "privacy.s2_auth": "Authentication and sync across devices",
+  "privacy.s2_quotes": "Saving and organizing quotes",
+  "privacy.s2_covers": "Automatic book-cover matching via third-party book APIs",
+  "privacy.s3_title": "3. Third parties",
+  "privacy.s3_supabase": "Supabase — auth, database, optional image storage",
+  "privacy.s3_books": "Google Books and (if configured) Kakao/Naver book APIs",
+  "privacy.s3_no_ads": "We don’t use advertising or tracking SDKs, and we don’t sell personal data.",
+  "privacy.s4_title": "4. Retention & deletion",
+  "privacy.s4_body":
+    "Delete account in Settings removes your account, synced data, related cloud images, and local app data on this device.",
+  "privacy.s5_title": "5. Contact",
+  "privacy.s5_contact": "Contact via GitHub Issues",
 
   "book.unknown_title": "Untitled",
   "book.back_label": "Back",
@@ -510,6 +581,17 @@ const ja: Dict = {
   "settings.not_signed_in": "未ログイン (ローカル保存のみ)",
   "settings.sign_in": "ログイン",
   "settings.sign_out": "ログアウト",
+  "settings.delete_account": "アカウント削除",
+  "settings.delete_account_confirm_title": "アカウントを削除しますか？",
+  "settings.delete_account_confirm_body":
+    "クラウドに同期された記録・画像と、この端末のアプリデータが削除されます。元に戻せません。",
+  "settings.delete_account_confirm": "削除する",
+  "settings.delete_account_cancel": "キャンセル",
+  "settings.delete_account_busy": "削除中...",
+  "settings.delete_account_error": "アカウント削除に失敗しました。しばらくしてから再試行してください。",
+  "settings.legal": "情報",
+  "settings.privacy": "プライバシーポリシー",
+  "settings.support": "サポート",
 
   "settings.store_images": "元画像を保存",
   "settings.store_images_desc": "オフにすると認識後の元画像は保存されません",
@@ -547,6 +629,30 @@ const ja: Dict = {
   "settings.covers_match": "一致",
   "settings.covers_fail": "未一致",
   "settings.covers_and_more": "...他 {count}件",
+
+  "privacy.title": "プライバシーポリシー",
+  "privacy.updated": "最終更新: 2026-07-12",
+  "privacy.intro":
+    "Quote は本の一文を記録・保管するアプリです。収集・利用・削除について説明します。",
+  "privacy.s1_title": "1. 収集する情報",
+  "privacy.s1_email": "メール — ログイン時（マジックリンク / 認証コード）",
+  "privacy.s1_content": "引用、メモ、書名・著者など保存したコンテンツ",
+  "privacy.s1_photos":
+    "写真 — OCR用。「元画像を保存」がオンの場合のみクラウドにアップロードされることがあります",
+  "privacy.s1_local": "端末内のローカル保存（オフライン用）",
+  "privacy.s2_title": "2. 利用目的",
+  "privacy.s2_auth": "認証と端末間同期",
+  "privacy.s2_quotes": "引用の保存・本棚管理",
+  "privacy.s2_covers": "表紙の自動マッチ（外部の書籍 API）",
+  "privacy.s3_title": "3. 第三者",
+  "privacy.s3_supabase": "Supabase — 認証、DB、（任意）画像保存",
+  "privacy.s3_books": "Google Books および（設定時）Kakao/Naver 書籍 API",
+  "privacy.s3_no_ads": "広告・追跡 SDK は使わず、個人情報を販売しません。",
+  "privacy.s4_title": "4. 保管と削除",
+  "privacy.s4_body":
+    "設定のアカウント削除で、アカウント・同期データ・関連クラウド画像とこの端末のアプリデータが削除されます。",
+  "privacy.s5_title": "5. お問い合わせ",
+  "privacy.s5_contact": "GitHub Issues で問い合わせる",
 
   "book.unknown_title": "タイトルなし",
   "book.back_label": "戻る",

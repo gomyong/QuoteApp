@@ -13,6 +13,7 @@ import Library from "./pages/Library";
 import BookDetail from "./pages/BookDetail";
 import SignIn from "./pages/SignIn";
 import Settings from "./pages/Settings";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/book/:bookId" element={<BookDetail />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

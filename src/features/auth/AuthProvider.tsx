@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/lib/supabase";
+import { wipeLocalData } from "@/sync/wipeLocalData";
 
 /**
  * Magic-link callback URL.
@@ -12,6 +13,9 @@ import { supabase } from "@/lib/supabase";
  * IMPORTANT: Both values must be whitelisted under
  *   Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
  * otherwise Supabase ignores the request and falls back to Site URL.
+ *
+ * Do NOT use `login-callback` — that string only existed in old docs and
+ * does not match this app.
  */
 const getEmailRedirectTo = (): string | undefined => {
   if (Capacitor.isNativePlatform()) return "app.quote.note://auth/callback";
@@ -33,6 +37,11 @@ type AuthState = {
    */
   verifyEmailOtp: (email: string, code: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  /**
+   * Permanently delete the signed-in account (server + storage) and wipe
+   * local app data. Requires `public.delete_own_account()` migration.
+   */
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -93,6 +102,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
       async signOut() {
         await supabase.auth.signOut();
+      },
+      async deleteAccount() {
+        const { error } = await supabase.rpc("delete_own_account");
+        if (error) {
+          return { error: error.message };
+        }
+        // Session is gone server-side; clear client + local stores.
+        try {
+          await supabase.auth.signOut({ scope: "local" });
+        } catch {
+          /* ignore — user row may already be gone */
+        }
+        await wipeLocalData();
+        // Open IDB handles may still point at deleted DBs — hard reload
+        // guarantees a clean slate for the next session.
+        if (typeof window !== "undefined") {
+          window.location.hash = "#/";
+          window.location.reload();
+        }
+        return { error: null };
       },
     }),
     [session, loading],

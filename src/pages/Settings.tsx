@@ -4,16 +4,31 @@ import {
   AlertCircle,
   BookMarked,
   CheckCircle2,
+  ExternalLink,
+  FileText,
   Globe,
   Image as ImageIcon,
+  Loader2,
   LogIn,
   LogOut,
   RefreshCw,
+  Trash2,
   User,
   WifiOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
 import { retryMissingCovers } from "@/features/books/useEnsureCovers";
@@ -25,6 +40,9 @@ import {
 } from "@/sync/syncEngine";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { LANGUAGES, type Language } from "@/i18n/config";
+
+/** Public support URL (GitHub Pages on QuoteApp). */
+const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/support.html";
 
 /** Human-friendly "N minutes ago"-style formatting via i18n keys. */
 const useRelativeTime = () => {
@@ -44,14 +62,20 @@ const useRelativeTime = () => {
   };
 };
 
+const openExternal = (url: string) => {
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
 const Settings = () => {
   const { t, lang, setLanguage } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const navigate = useNavigate();
   const [storeImages, setStoreImages] = useState(false);
   const [busy, setBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
   const [coverBusy, setCoverBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const formatRelative = useRelativeTime();
 
   useEffect(() => {
@@ -83,6 +107,19 @@ const Settings = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    const { error } = await deleteAccount();
+    setDeleting(false);
+    if (error) {
+      setDeleteError(t("settings.delete_account_error"));
+      console.warn("[settings] deleteAccount failed:", error);
+      return;
+    }
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="h-dvh flex flex-col bg-background overflow-hidden">
       {/* Fixed header */}
@@ -107,14 +144,64 @@ const Settings = () => {
             <span className="text-sm text-foreground">{t("settings.account")}</span>
           </div>
           {user ? (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground truncate">{user.email}</span>
-              <button
-                onClick={signOut}
-                className="text-xs px-3 py-1 rounded-full border border-glass-border/30 hover:bg-glass-border/10 inline-flex items-center gap-1"
-              >
-                <LogOut size={12} /> {t("settings.sign_out")}
-              </button>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-muted-foreground truncate">{user.email}</span>
+                <button
+                  onClick={signOut}
+                  className="text-xs px-3 py-1 rounded-full border border-glass-border/30 hover:bg-glass-border/10 inline-flex items-center gap-1 shrink-0"
+                >
+                  <LogOut size={12} /> {t("settings.sign_out")}
+                </button>
+              </div>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    className="w-full text-xs py-2.5 rounded-xl border border-destructive/40 text-destructive hover:bg-destructive/10 inline-flex items-center justify-center gap-1.5 disabled:opacity-60"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        {t("settings.delete_account_busy")}
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={12} />
+                        {t("settings.delete_account")}
+                      </>
+                    )}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-[min(22rem,calc(100vw-2rem))] rounded-2xl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {t("settings.delete_account_confirm_title")}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t("settings.delete_account_confirm_body")}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("settings.delete_account_cancel")}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.preventDefault();
+                        void handleDeleteAccount();
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {t("settings.delete_account_confirm")}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              {deleteError && (
+                <p className="text-[11px] text-destructive text-center">{deleteError}</p>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-between">
@@ -280,7 +367,31 @@ const Settings = () => {
               {coverBusy ? t("settings.covers_searching") : t("settings.covers_retry")}
             </button>
           </div>
+        </section>
 
+        <section className="glass rounded-2xl p-4 mt-4">
+          <div className="flex items-center gap-3 mb-3">
+            <FileText size={16} className="text-accent" />
+            <span className="text-sm text-foreground">{t("settings.legal")}</span>
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => navigate("/privacy")}
+              className="w-full text-left text-sm text-foreground py-2 px-1 rounded-lg hover:bg-glass-border/10 flex items-center justify-between"
+            >
+              {t("settings.privacy")}
+              <ExternalLink size={12} className="text-muted-foreground" />
+            </button>
+            <button
+              type="button"
+              onClick={() => openExternal(SUPPORT_URL)}
+              className="w-full text-left text-sm text-foreground py-2 px-1 rounded-lg hover:bg-glass-border/10 flex items-center justify-between"
+            >
+              {t("settings.support")}
+              <ExternalLink size={12} className="text-muted-foreground" />
+            </button>
+          </div>
         </section>
         </div>
       </main>
