@@ -7,6 +7,7 @@ import {
   ExternalLink,
   FileText,
   Globe,
+  Heart,
   Image as ImageIcon,
   Loader2,
   LogIn,
@@ -39,6 +40,7 @@ import {
 } from "@/sync/syncEngine";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { LANGUAGES, type Language } from "@/i18n/config";
+import { DONATION_URL, SUPPORT_ENABLED, isDonationConfigured } from "@/config/support";
 
 /** Public support URL (GitHub Pages on QuoteApp). */
 const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/#contact";
@@ -317,6 +319,32 @@ const Settings = () => {
             </button>
           </div>
         </section>
+
+        {SUPPORT_ENABLED && (
+          <section className="glass rounded-2xl p-4 mt-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Heart size={16} className="text-accent" />
+              <span className="text-sm text-foreground">{t("settings.support_dev")}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              {t("settings.support_dev_desc")}
+            </p>
+            {isDonationConfigured() ? (
+              <button
+                type="button"
+                onClick={() => openExternal(DONATION_URL)}
+                className="w-full text-sm py-2.5 rounded-xl bg-accent text-accent-foreground inline-flex items-center justify-center gap-1.5"
+              >
+                <Heart size={14} />
+                {t("settings.support_dev_cta")}
+              </button>
+            ) : (
+              <div className="w-full text-sm py-2.5 rounded-xl bg-glass-border/10 text-muted-foreground inline-flex items-center justify-center gap-1.5">
+                {t("settings.support_dev_soon")}
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="glass rounded-2xl p-4 mt-4">
           <div className="flex items-center gap-3 mb-3">

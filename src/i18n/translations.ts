@@ -144,6 +144,12 @@ const ko: Dict = {
   "settings.privacy": "개인정보 처리방침",
   "settings.support": "고객 지원",
 
+  // --- settings (support the developer)
+  "settings.support_dev": "개발자 응원하기",
+  "settings.support_dev_desc": "Quote는 혼자 만드는 앱이에요. 작은 응원이 큰 힘이 됩니다.",
+  "settings.support_dev_cta": "후원하기",
+  "settings.support_dev_soon": "후원 준비 중이에요",
+
   // --- settings (storage)
   "settings.store_images": "원본 이미지 보관",
   "settings.store_images_desc": "꺼두면 인식 후 원본은 저장하지 않아요",
@@ -373,6 +379,11 @@ const en: Dict = {
   "settings.privacy": "Privacy Policy",
   "settings.support": "Support",
 
+  "settings.support_dev": "Support the developer",
+  "settings.support_dev_desc": "Quote is built by one person. A little support goes a long way.",
+  "settings.support_dev_cta": "Donate",
+  "settings.support_dev_soon": "Donations coming soon",
+
   "settings.store_images": "Keep original photos",
   "settings.store_images_desc": "When off, photos are discarded after OCR",
 
@@ -592,6 +603,11 @@ const ja: Dict = {
   "settings.legal": "情報",
   "settings.privacy": "プライバシーポリシー",
   "settings.support": "サポート",
+
+  "settings.support_dev": "開発者を応援する",
+  "settings.support_dev_desc": "Quoteは個人で開発しているアプリです。応援が大きな力になります。",
+  "settings.support_dev_cta": "支援する",
+  "settings.support_dev_soon": "支援機能は準備中です",
 
   "settings.store_images": "元画像を保存",
   "settings.store_images_desc": "オフにすると認識後の元画像は保存されません",
