@@ -50,8 +50,11 @@ app.quote.note://auth/callback
 | **Privacy Policy URL** | https://gomyong.github.io/QuoteApp/privacy.html |
 | **Support URL** | https://gomyong.github.io/QuoteApp/#contact |
 | **Marketing URL** (선택) | https://gomyong.github.io/QuoteApp/ |
+| **App Store** | ⏳ 사업자/계약 준비 중 — 랜딩은 **출시 알림** CTA로 배포 |
 
 랜딩: https://gomyong.github.io/QuoteApp/
+
+App Store 링크가 나오면 랜딩의 「출시 알림」 CTA를 App Store URL로 바꾸면 됩니다.
 
 ### E. App Store Connect (출시 메타)
 
