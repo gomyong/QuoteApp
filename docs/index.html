@@ -88,21 +88,22 @@
     <section id="hero" class="relative flex items-center overflow-hidden min-h-[85vh] pt-20">
       <div class="absolute inset-0 z-0">
         <img
-          class="w-full h-full object-cover object-center"
+          class="w-full h-full object-cover object-[72%_center]"
           alt=""
           src="./images/hero-reading.png"
         />
-        <div class="absolute inset-0 bg-gradient-to-r from-white/95 via-white/70 to-transparent"></div>
+        <!-- light scrim only for left copy readability — keep photo visible -->
+        <div class="absolute inset-0 bg-gradient-to-r from-black/25 via-black/5 to-transparent md:from-black/15 md:via-transparent"></div>
       </div>
       <div class="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-12 py-16">
         <div class="max-w-2xl">
-          <h1 class="text-5xl md:text-7xl font-bold text-primary leading-[1.1] mb-6 tracking-tighter">
+          <h1 class="text-5xl md:text-7xl font-bold text-white leading-[1.1] mb-6 tracking-tighter drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
             나만의 독서 노트,<br />Quote
           </h1>
-          <p class="text-xl md:text-2xl text-on-surface-variant font-medium mb-4 leading-relaxed">
+          <p class="text-xl md:text-2xl text-white/95 font-medium mb-4 leading-relaxed drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]">
             “밑줄만 긋고 덮어둔 문장들, 다시 펼쳐본 적이 있었나요?”
           </p>
-          <p class="text-lg md:text-xl text-on-surface-variant/80 mb-10">
+          <p class="text-lg md:text-xl text-white/85 mb-10 drop-shadow-[0_1px_8px_rgba(0,0,0,0.3)]">
             이제 촬영 한 번으로 당신만의 디지털 독서 노트를 시작하세요.
           </p>
           <div class="flex flex-col sm:flex-row gap-4">
@@ -115,18 +116,18 @@
             </a>
             <a
               href="#preview"
-              class="px-8 h-14 bg-white/50 backdrop-blur-sm border-2 border-primary/20 text-primary rounded-xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-white transition-all"
+              class="px-8 h-14 bg-white/90 backdrop-blur-sm border border-white/60 text-primary rounded-xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-white transition-all"
             >
               더 알아보기
             </a>
           </div>
-          <p class="text-sm text-on-surface-variant/70 mt-4">
+          <p class="text-sm text-white/80 mt-4 drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)]">
             iOS App Store 출시 준비 중 · Android는 추후 지원 예정입니다
           </p>
         </div>
       </div>
-      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40" aria-hidden="true">
-        <span class="material-symbols-outlined text-4xl">expand_more</span>
+      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-70 text-white" aria-hidden="true">
+        <span class="material-symbols-outlined text-4xl drop-shadow">expand_more</span>
       </div>
     </section>
 
