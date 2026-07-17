@@ -150,6 +150,19 @@ const ko: Dict = {
   "settings.support_dev_cta": "후원하기",
   "settings.support_dev_soon": "후원 준비 중이에요",
 
+  // --- tip sheet (voluntary IAP)
+  "tip.title": "개발자에게 커피 한 잔",
+  "tip.subtitle": "앱이 도움이 되었다면 자유롭게 응원해 주세요.",
+  "tip.tier_small": "작은 응원",
+  "tip.tier_medium": "든든한 응원",
+  "tip.tier_large": "큰 응원",
+  "tip.unavailable": "후원 설정을 불러올 수 없어요. 앱을 최신 버전으로 업데이트한 뒤 다시 시도해 주세요.",
+  "tip.error": "상품 정보를 불러오지 못했어요.",
+  "tip.retry": "다시 시도",
+  "tip.purchase_error": "결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "tip.thanks_title": "정말 고맙습니다",
+  "tip.thanks_body": "보내주신 응원은 Quote를 계속 다듬는 데 큰 힘이 됩니다.",
+
   // --- settings (storage)
   "settings.store_images": "원본 이미지 보관",
   "settings.store_images_desc": "꺼두면 인식 후 원본은 저장하지 않아요",
@@ -384,6 +397,18 @@ const en: Dict = {
   "settings.support_dev_cta": "Donate",
   "settings.support_dev_soon": "Donations coming soon",
 
+  "tip.title": "Buy the developer a coffee",
+  "tip.subtitle": "If Quote helps you, feel free to leave a tip.",
+  "tip.tier_small": "Small tip",
+  "tip.tier_medium": "Medium tip",
+  "tip.tier_large": "Large tip",
+  "tip.unavailable": "Tips aren’t available right now. Please try again in the app.",
+  "tip.error": "Couldn’t load the products.",
+  "tip.retry": "Try again",
+  "tip.purchase_error": "The purchase didn’t go through. Please try again shortly.",
+  "tip.thanks_title": "Thank you so much",
+  "tip.thanks_body": "Your support helps keep Quote growing.",
+
   "settings.store_images": "Keep original photos",
   "settings.store_images_desc": "When off, photos are discarded after OCR",
 
@@ -608,6 +633,18 @@ const ja: Dict = {
   "settings.support_dev_desc": "Quoteは個人で開発しているアプリです。応援が大きな力になります。",
   "settings.support_dev_cta": "支援する",
   "settings.support_dev_soon": "支援機能は準備中です",
+
+  "tip.title": "開発者にコーヒーを一杯",
+  "tip.subtitle": "アプリが役に立ったら、気軽に応援してください。",
+  "tip.tier_small": "小さな応援",
+  "tip.tier_medium": "しっかり応援",
+  "tip.tier_large": "大きな応援",
+  "tip.unavailable": "現在、支援を受け付けていません。アプリで再度お試しください。",
+  "tip.error": "商品情報を読み込めませんでした。",
+  "tip.retry": "再試行",
+  "tip.purchase_error": "購入を完了できませんでした。しばらくして再試行してください。",
+  "tip.thanks_title": "本当にありがとうございます",
+  "tip.thanks_body": "いただいた応援はQuoteの改善に大きく役立ちます。",
 
   "settings.store_images": "元画像を保存",
   "settings.store_images_desc": "オフにすると認識後の元画像は保存されません",

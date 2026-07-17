@@ -16,7 +16,7 @@ import {
   User,
   WifiOff,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import {
   AlertDialog,
@@ -40,7 +40,9 @@ import {
 } from "@/sync/syncEngine";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { LANGUAGES, type Language } from "@/i18n/config";
-import { DONATION_URL, SUPPORT_ENABLED, isDonationConfigured } from "@/config/support";
+import { SUPPORT_ENABLED, isIapPreviewMode, isTipSheetEnabled } from "@/config/support";
+import { TIP_PREVIEW_SETTINGS } from "@/config/tipPreview";
+import TipSheet from "@/components/TipSheet";
 
 /** Public support URL (GitHub Pages on QuoteApp). */
 const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/#contact";
@@ -71,13 +73,20 @@ const Settings = () => {
   const { t, lang, setLanguage } = useTranslation();
   const { user, signOut, deleteAccount } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preview = isIapPreviewMode();
   const [storeImages, setStoreImages] = useState(false);
   const [busy, setBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
   const [coverBusy, setCoverBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [tipOpen, setTipOpen] = useState(false);
   const formatRelative = useRelativeTime();
+
+  useEffect(() => {
+    if (searchParams.get("openTip") === "1") setTipOpen(true);
+  }, [searchParams]);
 
   useEffect(() => {
     (async () => {
@@ -324,19 +333,21 @@ const Settings = () => {
           <section className="glass rounded-2xl p-4 mt-4">
             <div className="flex items-center gap-3 mb-2">
               <Heart size={16} className="text-accent" />
-              <span className="text-sm text-foreground">{t("settings.support_dev")}</span>
+              <span className="text-sm text-foreground">
+                {preview ? TIP_PREVIEW_SETTINGS.title : t("settings.support_dev")}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              {t("settings.support_dev_desc")}
+              {preview ? TIP_PREVIEW_SETTINGS.description : t("settings.support_dev_desc")}
             </p>
-            {isDonationConfigured() ? (
+            {isTipSheetEnabled() ? (
               <button
                 type="button"
-                onClick={() => openExternal(DONATION_URL)}
+                onClick={() => setTipOpen(true)}
                 className="w-full text-sm py-2.5 rounded-xl bg-accent text-accent-foreground inline-flex items-center justify-center gap-1.5"
               >
                 <Heart size={14} />
-                {t("settings.support_dev_cta")}
+                {preview ? TIP_PREVIEW_SETTINGS.cta : t("settings.support_dev_cta")}
               </button>
             ) : (
               <div className="w-full text-sm py-2.5 rounded-xl bg-glass-border/10 text-muted-foreground inline-flex items-center justify-center gap-1.5">
@@ -345,6 +356,8 @@ const Settings = () => {
             )}
           </section>
         )}
+
+        <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} />
 
         <section className="glass rounded-2xl p-4 mt-4">
           <div className="flex items-center gap-3 mb-3">
