@@ -10,6 +10,7 @@ import { syncOnce } from "@/sync/syncEngine";
 import { ensureCoverForBook } from "@/features/books/useEnsureCovers";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import type { Book } from "@/sync/types";
+import { toast } from "@/components/ui/sonner";
 
 const Capture = () => {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ const Capture = () => {
   const [showOcr, setShowOcr] = useState(false);
   const [recentBooks, setRecentBooks] = useState<Book[]>([]);
   const lastImageRef = useRef<PickedImage | null>(null);
+  const quoteInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const loadRecentBooks = async () => {
     const books = await repo.listBooksWithCounts();
@@ -70,6 +72,9 @@ const Capture = () => {
         setAuthor("");
         setThoughts("");
       }, 1400);
+    } catch (e) {
+      console.warn("[capture] save failed:", e);
+      toast.error(t("capture.save_error"));
     } finally {
       setSaving(false);
     }
@@ -107,7 +112,12 @@ const Capture = () => {
           {[
             { icon: Camera, key: "photo", label: t("capture.from_photo"), onClick: () => setShowOcr(true) },
             { icon: Mic, key: "voice", label: t("capture.from_voice"), onClick: () => undefined, disabled: true },
-            { icon: Type, key: "type", label: t("capture.type_directly"), onClick: () => undefined },
+            {
+              icon: Type,
+              key: "type",
+              label: t("capture.type_directly"),
+              onClick: () => quoteInputRef.current?.focus(),
+            },
           ].map(({ icon: Icon, key, label, onClick, disabled }) => (
             <button
               key={key}
@@ -130,6 +140,7 @@ const Capture = () => {
         >
           <div className="glass rounded-2xl p-4">
             <textarea
+              ref={quoteInputRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={t("capture.quote_placeholder")}

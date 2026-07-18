@@ -19,6 +19,8 @@ export type SyncStatus = {
   pulledQuotes: number;
   pulledBooks: number;
   pendingOutbox: number;
+  /** Ops that failed ≥5 times and need attention / retry. */
+  deadLetterCount: number;
   isOnline: boolean;
   isAuthenticated: boolean;
 };
@@ -31,6 +33,7 @@ const defaultStatus: SyncStatus = {
   pulledQuotes: 0,
   pulledBooks: 0,
   pendingOutbox: 0,
+  deadLetterCount: 0,
   isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
   isAuthenticated: false,
 };
@@ -122,8 +125,7 @@ const pushQuote = async (id: string, userId: string) => {
 };
 
 const pushBook = async (id: string, userId: string) => {
-  const all = await repo.listBooks();
-  const b = all.find((x) => x.id === id);
+  const b = await repo.getBook(id);
   if (!b) return;
   const payload: Partial<Book> & { id: string; user_id: string } = {
     id: b.id,
@@ -149,7 +151,11 @@ const deleteQuoteRemote = async (id: string) => {
 
 const uploadImage = async (imageId: string, userId: string) => {
   const img = await repo.getImage(imageId);
-  if (!img) return;
+  if (!img) {
+    // Local blob already gone. Do not treat as success — park in dead letter
+    // after retries rather than silently clearing the outbox entry.
+    throw new Error(`local image missing: ${imageId}`);
+  }
   const ext = img.mime.includes("png") ? "png" : img.mime.includes("webp") ? "webp" : "jpg";
   const path = `${userId}/${img.quote_id}.${ext}`;
   const blob = new Blob([decodeBase64(img.base64)], { type: img.mime || "image/jpeg" });
@@ -157,17 +163,20 @@ const uploadImage = async (imageId: string, userId: string) => {
     .from(BUCKET)
     .upload(path, blob, { upsert: true, contentType: img.mime || "image/jpeg" });
   if (upErr) throw upErr;
+
+  // Confirm remote quote path BEFORE deleting local bytes.
+  const { error: qErr } = await supabase
+    .from("quotes")
+    .update({ source_image_path: path })
+    .eq("id", img.quote_id);
+  if (qErr) throw qErr;
+
   const q = await repo.getQuote(img.quote_id);
   if (q) {
     const updated: Quote = { ...q, source_image_path: path, updated_at: new Date().toISOString() };
     await repo.putQuote(updated);
   }
   await repo.deleteImage(imageId);
-  const { error: qErr } = await supabase
-    .from("quotes")
-    .update({ source_image_path: path })
-    .eq("id", img.quote_id);
-  if (qErr) throw qErr;
 };
 
 const applyOutboxEntry = async (entry: OutboxEntry, userId: string) => {
@@ -225,83 +234,125 @@ const pushOutbox = async (userId: string): Promise<number> => {
       const next = { ...entry, attempts: entry.attempts + 1, last_error: msg };
       await repo.putOutboxEntry(next);
       if (next.attempts >= 5) {
-        console.warn("[sync] dropping entry after 5 attempts", next);
+        // Preserve for diagnostics / manual retry — never silent-drop.
+        console.warn("[sync] moving entry to dead letter after 5 attempts", next);
+        await repo.addDeadLetter({
+          id: next.id,
+          op: next.op,
+          created_at: next.created_at,
+          failed_at: new Date().toISOString(),
+          attempts: next.attempts,
+          last_error: msg,
+        });
         await repo.deleteOutbox(entry.id);
-      } else {
-        // Stop at first failure so we don't amplify errors — retry next cycle.
-        throw new Error(`push halted after ${pushed} entries: ${msg}`);
+        // Continue with remaining entries — this one is parked.
+        continue;
       }
+      // Stop at first retryable failure so we don't amplify errors.
+      throw new Error(`push halted after ${pushed} entries: ${msg}`);
     }
   }
   return pushed;
 };
 
+const PAGE = 500;
+
+const maxIso = (a: string, b: string): string => (a > b ? a : b);
+
 const pullChanges = async (userId: string): Promise<{ quotes: number; books: number }> => {
   const lastPulledAt = (await repo.getMeta("lastPulledAt")) ?? "1970-01-01T00:00:00.000Z";
-
-  const { data: quotes, error: qErr } = await supabase
-    .from("quotes")
-    .select("*")
-    .eq("user_id", userId)
-    .gt("updated_at", lastPulledAt)
-    .order("updated_at", { ascending: true })
-    .limit(500);
-  if (qErr) throw qErr;
-
+  let cursor = lastPulledAt;
+  let maxSeen = lastPulledAt;
   let pulledQuotes = 0;
-  for (const remote of quotes ?? []) {
-    const local = await repo.getQuote(remote.id);
-    if (!local || local.updated_at <= remote.updated_at) {
-      const merged: Quote = {
-        id: remote.id,
-        user_id: remote.user_id,
-        book_id: remote.book_id,
-        content: remote.content,
-        thoughts: remote.thoughts,
-        page: remote.page,
-        source_image_path: remote.source_image_path,
-        is_favorite: typeof remote.is_favorite === "boolean" ? remote.is_favorite : (local?.is_favorite ?? false),
-        captured_at: remote.captured_at,
-        created_at: remote.created_at,
-        updated_at: remote.updated_at,
-        deleted_at: remote.deleted_at,
-      };
-      await repo.putQuote(merged);
-      pulledQuotes += 1;
-    }
-  }
-
-  const { data: books, error: bErr } = await supabase
-    .from("books")
-    .select("*")
-    .eq("user_id", userId)
-    .gt("updated_at", lastPulledAt)
-    .order("updated_at", { ascending: true })
-    .limit(500);
-  if (bErr) throw bErr;
-
   let pulledBooks = 0;
-  for (const remote of books ?? []) {
-    const local = (await repo.listBooks()).find((b) => b.id === remote.id);
-    if (!local || local.updated_at <= remote.updated_at) {
-      await repo.putBook({
-        id: remote.id,
-        user_id: remote.user_id,
-        title: remote.title,
-        author: remote.author,
-        isbn: remote.isbn,
-        cover_url: remote.cover_url,
-        created_at: remote.created_at,
-        updated_at: remote.updated_at,
-      });
-      pulledBooks += 1;
+
+  // Page until a batch returns < PAGE rows so we never advance past unpulled work.
+  for (;;) {
+    const { data: quotes, error: qErr } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("user_id", userId)
+      .gt("updated_at", cursor)
+      .order("updated_at", { ascending: true })
+      .limit(PAGE);
+    if (qErr) throw qErr;
+    const batch = quotes ?? [];
+    for (const remote of batch) {
+      maxSeen = maxIso(maxSeen, remote.updated_at);
+      const local = await repo.getQuote(remote.id);
+      if (!local || local.updated_at <= remote.updated_at) {
+        const merged: Quote = {
+          id: remote.id,
+          user_id: remote.user_id,
+          book_id: remote.book_id,
+          content: remote.content,
+          thoughts: remote.thoughts,
+          page: remote.page,
+          source_image_path: remote.source_image_path,
+          is_favorite:
+            typeof remote.is_favorite === "boolean"
+              ? remote.is_favorite
+              : (local?.is_favorite ?? false),
+          captured_at: remote.captured_at,
+          created_at: remote.created_at,
+          updated_at: remote.updated_at,
+          deleted_at: remote.deleted_at,
+        };
+        await repo.putQuote(merged);
+        pulledQuotes += 1;
+      }
     }
+    if (batch.length === 0) break;
+    cursor = batch[batch.length - 1].updated_at;
+    if (batch.length < PAGE) break;
   }
 
-  await repo.setMeta("lastPulledAt", new Date().toISOString());
+  cursor = lastPulledAt;
+  for (;;) {
+    const { data: books, error: bErr } = await supabase
+      .from("books")
+      .select("*")
+      .eq("user_id", userId)
+      .gt("updated_at", cursor)
+      .order("updated_at", { ascending: true })
+      .limit(PAGE);
+    if (bErr) throw bErr;
+    const batch = books ?? [];
+    for (const remote of batch) {
+      maxSeen = maxIso(maxSeen, remote.updated_at);
+      const local = await repo.getBook(remote.id);
+      if (!local || local.updated_at <= remote.updated_at) {
+        await repo.putBook({
+          id: remote.id,
+          user_id: remote.user_id,
+          title: remote.title,
+          author: remote.author,
+          isbn: remote.isbn,
+          cover_url: remote.cover_url,
+          created_at: remote.created_at,
+          updated_at: remote.updated_at,
+        });
+        pulledBooks += 1;
+      }
+    }
+    if (batch.length === 0) break;
+    cursor = batch[batch.length - 1].updated_at;
+    if (batch.length < PAGE) break;
+  }
+
+  // Advance to the newest pulled row timestamp — never wall-clock "now".
+  await repo.setMeta("lastPulledAt", maxSeen);
   console.info(`[sync] pull: ${pulledQuotes} quote(s), ${pulledBooks} book(s)`);
   return { quotes: pulledQuotes, books: pulledBooks };
 };
+
+const refreshQueueCounts = async (): Promise<{
+  pendingOutbox: number;
+  deadLetterCount: number;
+}> => ({
+  pendingOutbox: await repo.outboxSize(),
+  deadLetterCount: (await repo.listDeadLetters()).length,
+});
 
 export const syncOnce = async (): Promise<void> => {
   if (runningPromise) return runningPromise;
@@ -309,7 +360,7 @@ export const syncOnce = async (): Promise<void> => {
   const online = isOnline();
   emit({ isOnline: online });
   if (!online) {
-    emit({ pendingOutbox: await repo.outboxSize() });
+    emit(await refreshQueueCounts());
     return;
   }
 
@@ -318,7 +369,7 @@ export const syncOnce = async (): Promise<void> => {
   if (!userId) {
     // Not signed in — record queue size so the user can see what'll get
     // synced after they log in, but don't touch the network.
-    emit({ pendingOutbox: await repo.outboxSize() });
+    emit(await refreshQueueCounts());
     return;
   }
 
@@ -332,7 +383,7 @@ export const syncOnce = async (): Promise<void> => {
         phase: "idle",
         pulledQuotes: pq,
         pulledBooks: pb,
-        pendingOutbox: await repo.outboxSize(),
+        ...(await refreshQueueCounts()),
         lastSyncAt: new Date().toISOString(),
       });
     } catch (e) {
@@ -341,7 +392,7 @@ export const syncOnce = async (): Promise<void> => {
       emit({
         phase: "error",
         lastError: msg,
-        pendingOutbox: await repo.outboxSize(),
+        ...(await refreshQueueCounts()),
       });
     } finally {
       runningPromise = null;
@@ -349,6 +400,18 @@ export const syncOnce = async (): Promise<void> => {
   })();
 
   return runningPromise;
+};
+
+/** Re-queue every dead-letter entry and run a sync cycle. */
+export const retryDeadLetters = async (): Promise<number> => {
+  const letters = await repo.listDeadLetters();
+  let n = 0;
+  for (const letter of letters) {
+    if (await repo.retryDeadLetter(letter.id)) n += 1;
+  }
+  if (n > 0) await syncOnce();
+  else emit(await refreshQueueCounts());
+  return n;
 };
 
 // Keep status.isOnline in sync with the browser signal even when no sync

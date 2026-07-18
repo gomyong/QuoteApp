@@ -1,20 +1,17 @@
 /**
  * Wipe all on-device Quote data (IndexedDB + Capacitor Preferences session
- * keys). Used after account deletion so a fresh install-like state remains.
+ * keys). Used after account deletion / sign-out so the next session cannot
+ * see another user's local library.
  *
- * Language preference is intentionally kept — deleting an account should
- * not reset the UI language.
+ * Language preference is intentionally kept — deleting an account / signing
+ * out should not reset the UI language.
  */
 
 import { Preferences } from "@capacitor/preferences";
+import { resetDBHandle } from "./db";
 
 const QUOTE_DB = "quote-app";
 const CACHE_DB = "quote-cache";
-
-/** Preference keys that hold session / sync state (not language). */
-const PREF_KEYS_TO_CLEAR = [
-  "sb-*-auth-token", // pattern handled separately via keys() scan when available
-];
 
 const deleteDatabase = (name: string): Promise<void> =>
   new Promise((resolve) => {
@@ -29,6 +26,8 @@ const deleteDatabase = (name: string): Promise<void> =>
   });
 
 export const wipeLocalData = async (): Promise<void> => {
+  // Drop the open IDB handle first so deleteDatabase is less likely to block.
+  await resetDBHandle();
   await Promise.all([deleteDatabase(QUOTE_DB), deleteDatabase(CACHE_DB)]);
 
   // Clear Capacitor Preferences except the language key.
@@ -40,6 +39,5 @@ export const wipeLocalData = async (): Promise<void> => {
     );
   } catch {
     // Fallback: ignore — auth signOut still clears the session client-side.
-    void PREF_KEYS_TO_CLEAR;
   }
 };

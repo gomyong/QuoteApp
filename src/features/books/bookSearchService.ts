@@ -139,6 +139,12 @@ export const fetchBestCoverMulti = async (
     { maxResults: 6, signal: opts.signal },
   );
 
+  // Abort must NOT poison the negative cache — leaving Library mid-fetch
+  // would otherwise lock "no cover" for 24h.
+  if (opts.signal?.aborted) {
+    return null;
+  }
+
   if (candidates.length === 0) {
     console.info(`[bookSearch] no candidates for "${title}"`);
     // Negative cache: prevents quota burn on the same miss every render.

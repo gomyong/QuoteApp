@@ -48,8 +48,18 @@ export type OutboxEntry = {
   last_error?: string | null;
 };
 
+/** Outbox ops that failed too many times — kept for diagnostics / retry. */
+export type DeadLetterEntry = {
+  id: string;
+  op: OutboxOp;
+  created_at: ISODateString;
+  failed_at: ISODateString;
+  attempts: number;
+  last_error: string | null;
+};
+
 export type Settings = {
   storeImages: boolean;
 };
 
-export type MetaKey = "lastPulledAt" | "deviceId";
+export type MetaKey = "lastPulledAt" | "deviceId" | "deadLetter";

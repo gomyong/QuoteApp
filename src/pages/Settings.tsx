@@ -34,6 +34,7 @@ import { repo } from "@/sync/repo";
 import { retryMissingCovers } from "@/features/books/useEnsureCovers";
 import {
   getSyncStatus,
+  retryDeadLetters,
   subscribeSyncStatus,
   syncOnce,
   type SyncStatus,
@@ -292,6 +293,33 @@ const Settings = () => {
                 {t("settings.sync_pending_count", { count: syncStatus.pendingOutbox })}
               </dd>
             </div>
+            {syncStatus.deadLetterCount > 0 && (
+              <div className="flex justify-between items-center gap-2">
+                <dt className="text-destructive">{t("settings.sync_failed")}</dt>
+                <dd className="flex items-center gap-2">
+                  <span className="text-destructive">
+                    {t("settings.sync_pending_count", {
+                      count: syncStatus.deadLetterCount,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        await retryDeadLetters();
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                    className="text-[11px] px-2 py-0.5 rounded-full border border-destructive/40 text-destructive"
+                  >
+                    {t("settings.sync_retry_failed")}
+                  </button>
+                </dd>
+              </div>
+            )}
             {(syncStatus.pushed > 0 ||
               syncStatus.pulledQuotes > 0 ||
               syncStatus.pulledBooks > 0) && (

@@ -72,10 +72,15 @@ export const scoreCandidate = (
 /**
  * "Looks contained" check used to accept matches whose bigram score is
  * deceptively low. Catches "데미안" vs "데미안 (개정판)" type pairs.
+ *
+ * Short queries (≤2 chars after normalize) are rejected — they match too
+ * many unrelated English titles via substring (e.g. "it", "on").
  */
 export const looksContained = (queryTitle: string, candTitle: string): boolean => {
   const q = normalize(queryTitle);
   const c = normalize(candTitle);
   if (!q || !c) return false;
-  return c.includes(q) || q.includes(c);
+  if (q.length < 3 && c.length < 3) return q === c;
+  if (q.length < 3) return false;
+  return c.includes(q) || (q.includes(c) && c.length >= 3);
 };

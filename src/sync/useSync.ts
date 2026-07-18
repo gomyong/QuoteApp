@@ -39,10 +39,13 @@ export const useSync = () => {
     let cancelled = false;
     const run = async () => {
       if (!user) return;
-      await repo.assignOwnerToLocalRecords(user.id);
-      if (!cancelled) await syncOnce();
+      const uid = user.id;
+      await repo.assignOwnerToLocalRecords(uid);
+      // Bail if the user changed / signed out while backfill was running.
+      if (cancelled) return;
+      await syncOnce();
     };
-    run();
+    void run();
     return () => {
       cancelled = true;
     };

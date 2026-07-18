@@ -59,3 +59,15 @@ export const getDB = (): Promise<IDBPDatabase<QuoteDB>> => {
   }
   return dbPromise;
 };
+
+/** Close the cached handle so the next getDB() opens a fresh DB (after wipe). */
+export const resetDBHandle = async (): Promise<void> => {
+  if (!dbPromise) return;
+  try {
+    const db = await dbPromise;
+    db.close();
+  } catch {
+    /* ignore — DB may already be deleted */
+  }
+  dbPromise = null;
+};

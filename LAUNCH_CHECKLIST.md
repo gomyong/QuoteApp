@@ -14,7 +14,7 @@ Most launch blockers are fixed in code. You only need to do the
 - [x] Contact form → Supabase `contact_inquiries` (no GitHub Issues)
 - [x] Docs: correct redirect URL `app.quote.note://auth/callback`
 - [x] Bilingual camera/photo permission strings + export compliance flag
-- [x] IAP/donation deferred for v1 (docs only — no in-app tip UI)
+- [x] **Voluntary tip IAP** (Settings → 개발자 응원하기) — RevenueCat + StoreKit consumables; see `IAP_STEP1_APPSTORE_DONATION.md`
 
 ---
 
@@ -50,7 +50,7 @@ app.quote.note://auth/callback
 | **Privacy Policy URL** | https://gomyong.github.io/QuoteApp/privacy.html |
 | **Support URL** | https://gomyong.github.io/QuoteApp/#contact |
 | **Marketing URL** (선택) | https://gomyong.github.io/QuoteApp/ |
-| **App Store** | ⏳ 사업자/계약 준비 중 — 랜딩은 **출시 알림** CTA로 배포 |
+| **App Store** | ⏳ 1.0 심사 통과 · **개발자 출시 대기** — 릴리스 후 App Store URL로 CTA 교체 |
 
 랜딩: https://gomyong.github.io/QuoteApp/
 
@@ -64,14 +64,15 @@ App Store 링크가 나오면 랜딩의 「출시 알림」 CTA를 App Store URL
    - User Content — Yes (App Functionality), Linked when signed in
    - Photos — Yes if users can sync originals (optional setting)
    - Tracking — **No**
-3. **유료 앱 계약** — 후원 IAP를 **나중에** 넣을 예정이면 미리 Active 권장.  
-   **v1에 후원 UI 없음** → IAP 상품 없이도 무료 앱 심사 가능
+3. **유료 앱 계약** — Paid Apps Agreement **Active** (후원 IAP 포함 v1 제출 완료).  
+   Product IDs: `app.quote.note.tip.small` / `.medium` / `.large` (small은 단독 심사 중일 수 있음)
 4. Review Notes 예시:
 
 ```
 Sign-in: enter email → open inbox → type the numeric code from the email
 (or tap the magic link). Camera is used for OCR. Offline works without login.
 Account deletion: Settings → Delete account.
+Optional tip: Settings → 개발자 응원하기 → 후원하기 (Sandbox or live IAP).
 Support: https://gomyong.github.io/QuoteApp/#contact
 ```
 

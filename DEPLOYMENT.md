@@ -16,9 +16,12 @@ This guide covers the three distribution paths the app supports today, in order 
   - `supabase/migrations/0002_add_is_favorite.sql`
   - `supabase/migrations/0003_input_hardening.sql`
   - `supabase/migrations/0004_delete_own_account.sql` (required for in-app account deletion)
+  - `supabase/migrations/0005_contact_inquiries.sql` (landing contact form)
 - `.env.local` contains:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
+  - `VITE_REVENUECAT_IOS_API_KEY` (iOS tip IAP — required for live tips)
+  - `VITE_IAP_TIP_PRODUCT_IDS` (comma-separated consumable IDs; see `.env.example`)
 
 ## App icon & splash (one time)
 
@@ -95,14 +98,22 @@ npm run ios            # builds, syncs, opens Xcode → Run
 npm run android
 ```
 
-## Donation IAP (App Store only) — deferred for v1
+## Donation IAP (App Store only) — **shipped in v1**
 
-The shipping v1 app is **free with no in-app tip UI**. Optional donations
-(RevenueCat + StoreKit) are planned later; see
-`IAP_STEP1_APPSTORE_DONATION.md` when you are ready.
+The app is **free** with an optional voluntary tip in **Settings → 개발자 응원하기**
+(RevenueCat + StoreKit **consumables**). No paywall, no feature lock.
 
-Do **not** mention tips/donations in App Store metadata until the purchase
-flow ships.
+Setup checklist: `IAP_STEP1_APPSTORE_DONATION.md` · release runbook: `RELEASE_NOW.md`
+
+Build with `.env.local` keys present (see Prerequisites). After changing env:
+
+```bash
+npm run build
+npx cap sync ios
+```
+
+**App Store metadata:** describe optional tips honestly; do **not** link to external
+payment methods in the app (Apple Guideline 3.1.1).
 
 ## Common issues
 

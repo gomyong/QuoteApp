@@ -87,6 +87,7 @@ const ko: Dict = {
   "capture.thought_label": "나의 생각",
   "capture.thought_placeholder": "이 문장에 대한 생각을 자유롭게...",
   "capture.save": "저장하기",
+  "capture.save_error": "저장에 실패했어요. 잠시 후 다시 시도해 주세요.",
   "capture.saving": "저장 중...",
   "capture.ocr_title": "사진으로 기록",
   "capture.ocr_from_camera": "카메라로 촬영",
@@ -182,6 +183,8 @@ const ko: Dict = {
   "settings.sync_last": "마지막 동기화",
   "settings.sync_pending": "대기 중 업로드",
   "settings.sync_pending_count": "{count}건",
+  "settings.sync_failed": "동기화 실패",
+  "settings.sync_retry_failed": "다시 시도",
   "settings.sync_recent": "최근 결과",
 
   // --- settings (cover retry)
@@ -337,6 +340,7 @@ const en: Dict = {
   "capture.thought_label": "Your thought",
   "capture.thought_placeholder": "Anything you'd like to remember about it...",
   "capture.save": "Save",
+  "capture.save_error": "Couldn’t save. Please try again shortly.",
   "capture.saving": "Saving...",
   "capture.ocr_title": "Capture from photo",
   "capture.ocr_from_camera": "Use camera",
@@ -425,6 +429,8 @@ const en: Dict = {
   "settings.sync_last": "Last sync",
   "settings.sync_pending": "Pending uploads",
   "settings.sync_pending_count": "{count}",
+  "settings.sync_failed": "Failed syncs",
+  "settings.sync_retry_failed": "Retry",
   "settings.sync_recent": "Recent",
 
   "settings.covers": "Auto covers",
@@ -574,6 +580,7 @@ const ja: Dict = {
   "capture.thought_label": "あなたの感想",
   "capture.thought_placeholder": "この一節について自由に...",
   "capture.save": "保存する",
+  "capture.save_error": "保存に失敗しました。しばらくしてから再試行してください。",
   "capture.saving": "保存中...",
   "capture.ocr_title": "写真から記録",
   "capture.ocr_from_camera": "カメラで撮影",
@@ -662,6 +669,8 @@ const ja: Dict = {
   "settings.sync_last": "最終同期",
   "settings.sync_pending": "アップロード待ち",
   "settings.sync_pending_count": "{count}件",
+  "settings.sync_failed": "同期失敗",
+  "settings.sync_retry_failed": "再試行",
   "settings.sync_recent": "最近の結果",
 
   "settings.covers": "自動カバー",

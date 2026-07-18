@@ -70,7 +70,11 @@ export const useEnsureCovers = (
       const result = await fetchBestCoverMulti(book.title, book.author, {
         signal: ac.signal,
       });
-      if (cancelled) return;
+      if (cancelled || ac.signal.aborted) {
+        // Abort / unmount — allow a future mount to retry this book.
+        attempted.delete(book.id);
+        return;
+      }
       if (!result) {
         // Release the attempted lock so a future mount (e.g. reopening
         // Library after adding more context like author) can retry.
@@ -92,6 +96,8 @@ export const useEnsureCovers = (
     return () => {
       cancelled = true;
       ac.abort();
+      // Release in-flight targets so remount can retry immediately.
+      for (const b of targets) attempted.delete(b.id);
     };
     // Re-run when the set of book ids changes (new book added, etc.).
     // eslint-disable-next-line react-hooks/exhaustive-deps

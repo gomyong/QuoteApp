@@ -73,6 +73,7 @@ const SignIn = () => {
 
   const handleVerify = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (status === "verifying") return;
     const token = code.replace(/\D/g, "").slice(0, MAX_CODE_LEN);
     if (!token) {
       setStatus("error");

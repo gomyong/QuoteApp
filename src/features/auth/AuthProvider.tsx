@@ -1,8 +1,17 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/lib/supabase";
 import { wipeLocalData } from "@/sync/wipeLocalData";
+import { syncOnce } from "@/sync/syncEngine";
 
 /**
  * Magic-link callback URL.
@@ -21,6 +30,27 @@ const getEmailRedirectTo = (): string | undefined => {
   if (Capacitor.isNativePlatform()) return "app.quote.note://auth/callback";
   if (typeof window !== "undefined") return `${window.location.origin}/#/`;
   return undefined;
+};
+
+const hardReloadHome = () => {
+  if (typeof window === "undefined") return;
+  window.location.hash = "#/";
+  window.location.reload();
+};
+
+/**
+ * Flush local Quote data so the next session cannot see another user's library.
+ * Best-effort sync first (when signed in) so unsynced work is pushed if online.
+ */
+const clearLocalSession = async (opts?: { syncFirst?: boolean }) => {
+  if (opts?.syncFirst) {
+    try {
+      await syncOnce();
+    } catch (e) {
+      console.warn("[auth] pre-wipe sync failed:", e);
+    }
+  }
+  await wipeLocalData();
 };
 
 type AuthState = {
@@ -49,6 +79,8 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef<string | null>(null);
+  const wipingRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -57,7 +89,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (mounted) setSession(data.session ?? null);
+        if (mounted) {
+          setSession(data.session ?? null);
+          userIdRef.current = data.session?.user?.id ?? null;
+        }
       } catch (e) {
         console.warn("[auth] getSession failed:", e);
       } finally {
@@ -65,8 +100,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-          if (mounted) setSession(nextSession);
+        const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+          if (!mounted) return;
+          const prevId = userIdRef.current;
+          const nextId = nextSession?.user?.id ?? null;
+
+          // Account switch without an intervening SIGNED_OUT (rare) — wipe first.
+          if (
+            prevId &&
+            nextId &&
+            prevId !== nextId &&
+            !wipingRef.current &&
+            event !== "INITIAL_SESSION"
+          ) {
+            wipingRef.current = true;
+            try {
+              await clearLocalSession({ syncFirst: false });
+            } finally {
+              wipingRef.current = false;
+            }
+            userIdRef.current = nextId;
+            setSession(nextSession);
+            hardReloadHome();
+            return;
+          }
+
+          userIdRef.current = nextId;
+          setSession(nextSession);
         });
         unsub = () => data.subscription.unsubscribe();
       } catch (e) {
@@ -101,26 +161,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: error?.message ?? null };
       },
       async signOut() {
-        await supabase.auth.signOut();
+        wipingRef.current = true;
+        try {
+          // Push while JWT is still valid, then clear session, then wipe local DB.
+          try {
+            await syncOnce();
+          } catch (e) {
+            console.warn("[auth] pre-signOut sync failed:", e);
+          }
+          await supabase.auth.signOut();
+          await wipeLocalData();
+        } finally {
+          wipingRef.current = false;
+        }
+        hardReloadHome();
       },
       async deleteAccount() {
         const { error } = await supabase.rpc("delete_own_account");
         if (error) {
           return { error: error.message };
         }
-        // Session is gone server-side; clear client + local stores.
+        wipingRef.current = true;
         try {
-          await supabase.auth.signOut({ scope: "local" });
-        } catch {
-          /* ignore — user row may already be gone */
+          try {
+            await supabase.auth.signOut({ scope: "local" });
+          } catch {
+            /* ignore — user row may already be gone */
+          }
+          await clearLocalSession({ syncFirst: false });
+        } finally {
+          wipingRef.current = false;
         }
-        await wipeLocalData();
-        // Open IDB handles may still point at deleted DBs — hard reload
-        // guarantees a clean slate for the next session.
-        if (typeof window !== "undefined") {
-          window.location.hash = "#/";
-          window.location.reload();
-        }
+        hardReloadHome();
         return { error: null };
       },
     }),

@@ -22,7 +22,8 @@ const DeepLinkHandler = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let handle: { remove: () => void } | { remove: () => Promise<void> } | null = null;
+    let cancelled = false;
+    let handle: { remove: () => void | Promise<void> } | null = null;
 
     const consumeUrl = async (url: string) => {
       try {
@@ -48,29 +49,35 @@ const DeepLinkHandler = () => {
             return;
           }
         }
-        console.info("[deeplink] url received but no auth tokens:", url);
+        // Avoid logging full URLs — they may contain tokens.
+        console.info("[deeplink] url received but no auth tokens");
       } catch (e) {
-        console.warn("[deeplink] failed to consume url:", url, e);
+        console.warn("[deeplink] failed to consume url:", e);
       }
     };
 
     void (async () => {
       // Handle warm-open (app already running → switched-back via deep link).
-      handle = await CapApp.addListener("appUrlOpen", ({ url }) => {
+      const listener = await CapApp.addListener("appUrlOpen", ({ url }) => {
         void consumeUrl(url);
       });
+      if (cancelled) {
+        void listener.remove();
+        return;
+      }
+      handle = listener;
 
       // Handle cold-launch (link tapped while app was terminated).
       try {
         const launch = await CapApp.getLaunchUrl();
-        if (launch?.url) void consumeUrl(launch.url);
+        if (!cancelled && launch?.url) void consumeUrl(launch.url);
       } catch (e) {
         console.warn("[deeplink] getLaunchUrl failed:", e);
       }
     })();
 
     return () => {
-      // PluginListenerHandle.remove() is async on newer Capacitor — fire & forget.
+      cancelled = true;
       void handle?.remove();
     };
   }, []);

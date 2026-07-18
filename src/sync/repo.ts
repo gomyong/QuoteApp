@@ -1,5 +1,12 @@
 import { getDB } from "./db";
-import type { Book, LocalImage, OutboxEntry, Quote, Settings } from "./types";
+import type {
+  Book,
+  DeadLetterEntry,
+  LocalImage,
+  OutboxEntry,
+  Quote,
+  Settings,
+} from "./types";
 
 const uuid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -403,6 +410,46 @@ export const repo = {
   async putOutboxEntry(entry: OutboxEntry) {
     const db = await getDB();
     await db.put("outbox", entry);
+  },
+
+  async listDeadLetters(): Promise<DeadLetterEntry[]> {
+    const raw = await this.getMeta("deadLetter");
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as DeadLetterEntry[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async addDeadLetter(entry: DeadLetterEntry): Promise<void> {
+    const existing = await this.listDeadLetters();
+    const next = [entry, ...existing.filter((e) => e.id !== entry.id)].slice(0, 50);
+    await this.setMeta("deadLetter", JSON.stringify(next));
+  },
+
+  async clearDeadLetters(): Promise<void> {
+    await this.setMeta("deadLetter", "[]");
+  },
+
+  /** Re-queue a dead letter back into the outbox for another attempt. */
+  async retryDeadLetter(id: string): Promise<boolean> {
+    const all = await this.listDeadLetters();
+    const hit = all.find((e) => e.id === id);
+    if (!hit) return false;
+    await this.putOutboxEntry({
+      id: hit.id,
+      op: hit.op,
+      created_at: hit.created_at,
+      attempts: 0,
+      last_error: null,
+    });
+    await this.setMeta(
+      "deadLetter",
+      JSON.stringify(all.filter((e) => e.id !== id)),
+    );
+    return true;
   },
 
   async putQuote(q: Quote) {

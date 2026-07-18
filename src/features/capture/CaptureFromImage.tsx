@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Image as ImageIcon,
@@ -19,6 +19,7 @@ type Props = {
 
 const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
   const { t } = useTranslation();
+  const mountedRef = useRef(true);
   const [pages, setPages] = useState<
     Array<{
       id: string;
@@ -28,6 +29,13 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
       error: string | null;
     }>
   >([]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const isRunning = pages.some((p) => p.status === "running");
   const canAddPage = pages.length < 2 && !isRunning;
@@ -44,7 +52,7 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
   const start = async (source: "camera" | "library") => {
     if (!canAddPage) return;
     const picked = await pickImage(source);
-    if (!picked) return;
+    if (!picked || !mountedRef.current) return;
     const id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
@@ -56,12 +64,14 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
     try {
       const ocr = await getOcr();
       const result = await ocr.recognize({ base64: picked.base64 });
+      if (!mountedRef.current) return;
       setPages((prev) =>
         prev.map((p) =>
           p.id === id ? { ...p, status: "done", result, error: null } : p,
         ),
       );
     } catch (e) {
+      if (!mountedRef.current) return;
       const message = e instanceof Error ? e.message : "OCR 실패";
       setPages((prev) =>
         prev.map((p) =>
@@ -82,12 +92,14 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
     try {
       const ocr = await getOcr();
       const result = await ocr.recognize({ base64: page.image.base64 });
+      if (!mountedRef.current) return;
       setPages((prev) =>
         prev.map((p) =>
           p.id === pageId ? { ...p, status: "done", result, error: null } : p,
         ),
       );
     } catch (e) {
+      if (!mountedRef.current) return;
       const message = e instanceof Error ? e.message : "OCR 실패";
       setPages((prev) =>
         prev.map((p) =>
