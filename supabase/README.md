@@ -48,17 +48,34 @@ Also add any web origins you use (e.g. `http://localhost:8080/#/`).
 > OTP code login in the app works even if the redirect URL is wrong. Magic-link
 > tap-to-open only works when this URL is whitelisted.
 
-In **Authentication → Email Templates → Magic Link**, include both:
+### Email templates (branded — avoid "spam-looking" mail)
 
-- `{{ .ConfirmationURL }}` (link)
-- `{{ .Token }}` (numeric code)
+Supabase's default auth emails have **no Quote branding** and, for new users,
+**no code** — so they look like spam and break the app's OTP flow. Replace both
+templates with the branded versions in [`email-templates/`](./email-templates):
 
-Example line (no fixed digit count — Supabase may use 6–10 digits):
+| Dashboard template | Paste this file | Subject line |
+| ------------------ | --------------- | ------------ |
+| **Confirm signup** | `email-templates/confirm-signup.html` | `[Quote] 이메일 인증 코드 {{ .Token }}` |
+| **Magic Link**     | `email-templates/magic-link.html`     | `[Quote] 로그인 코드 {{ .Token }}` |
 
-```html
-<p>Or enter this code in the app:</p>
-<p style="font-size:22px;font-weight:bold;letter-spacing:4px;">{{ .Token }}</p>
-```
+Steps: **Authentication → Email Templates → (each template)** → paste the HTML
+body and set the **Subject** exactly as above → **Save**.
+
+> **Why both?** A brand-new address triggers **Confirm signup** (link only by
+> default), while a returning address triggers **Magic Link**. The app is
+> **OTP-code first**, so *both* templates must expose `{{ .Token }}` or first-time
+> users get an email with no code to type. (No fixed digit count — Supabase may
+> use 6–10 digits.)
+
+#### Sender address (the real anti-spam fix)
+
+The default sender is `noreply@mail.app.supabase.io`, which many inboxes flag.
+To send as your own domain (e.g. `noreply@quote.app`) configure **custom SMTP**:
+
+**Authentication → Emails → SMTP Settings** → enable and point at a provider
+(Resend / SendGrid / Postmark / SES). Set **Sender name** to `Quote`. This also
+lifts the default ~3–4 emails/hour cap that will otherwise throttle real users.
 
 ## Storage
 
