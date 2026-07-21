@@ -53,7 +53,7 @@ const Index = () => {
     return map;
   }, [books]);
 
-  const recent = quotes.slice(0, 5);
+  const recent = quotes.slice(0, 10);
 
   const { requestActions, portal } = useQuoteActions({
     getBook: (q: Quote) => (q.book_id ? bookById.get(q.book_id) : undefined),
