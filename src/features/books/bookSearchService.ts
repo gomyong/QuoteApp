@@ -2,19 +2,23 @@
  * Book search orchestrator.
  *
  * Chains the configured providers in priority order and returns the
- * first non-empty result set. The order is:
+ * first non-empty result set. The order is **locale-aware**, decided by
+ * the script of the queried title:
  *
- *     Kakao  →  Naver  →  Google Books
+ *     Korean (한글) title:  Kakao → Naver → Google → Open Library
+ *     Latin  (English) title: Google → Open Library → Kakao → Naver
  *
- * Why this order:
- *   - Kakao's index is fed by 교보문고/예스24, which means the closest
- *     match for *Korean* titles. Hit rate and cover quality are best
- *     here for the typical Quote user.
- *   - Naver has the largest free quota of the three (25k/day) and a
- *     wider catalog including older Korean editions, but its scoring is
- *     looser, so we fall through to it only when Kakao misses.
- *   - Google Books is the universal fallback — strong on English titles
- *     and obscure imports, mediocre on Korean metadata.
+ * Why order by script:
+ *   - Kakao's index is fed by 교보문고/예스24 — the closest match for
+ *     *Korean* titles, with the best cover quality for the typical user.
+ *   - Naver has the largest free quota (25k/day) and older Korean
+ *     editions, but looser scoring, so it's the Korean second line.
+ *   - Google Books is strong on English titles; for Latin queries we also
+ *     pass `langRestrict=en` so English editions (and their better covers)
+ *     rank first.
+ *   - Open Library has an excellent free English/US catalog and permissive
+ *     CORS, making it the best partner for Google on foreign titles, and a
+ *     harmless last-resort fallback for Korean ones.
  *
  * Adapter-level safety:
  *   - Each adapter returns `[]` on any failure (network, 4xx, 5xx,
@@ -41,16 +45,46 @@ import { looksContained } from "./textSimilarity";
 import { kakaoBooksProvider } from "./providers/kakao";
 import { naverBooksProvider } from "./providers/naver";
 import { googleBooksProvider } from "./providers/google";
+import { openLibraryProvider } from "./providers/openLibrary";
 import {
   getCachedCoverLookup,
   setCachedCoverLookup,
 } from "./bookSearchCache";
 
-const PROVIDERS: BookSearchProvider[] = [
+/** Every adapter we know about, in canonical (Korean-first) order. */
+const ALL_PROVIDERS: BookSearchProvider[] = [
   kakaoBooksProvider,
   naverBooksProvider,
   googleBooksProvider,
+  openLibraryProvider,
 ];
+
+const hasHangul = (s: string): boolean => /[\uac00-\ud7a3]/.test(s);
+const hasLatin = (s: string): boolean => /[A-Za-z]/.test(s);
+
+/**
+ * Pick provider order + language hint from the *title's script*. Using the
+ * title (rather than the app's UI language) keeps a bilingual user's Korean
+ * and English books each routed to the provider that indexes them best.
+ */
+const routeForTitle = (
+  title: string,
+): { providers: BookSearchProvider[]; langRestrict?: string } => {
+  // Latin-only title (no Hangul) → English-catalog providers first.
+  if (!hasHangul(title) && hasLatin(title)) {
+    return {
+      providers: [
+        googleBooksProvider,
+        openLibraryProvider,
+        kakaoBooksProvider,
+        naverBooksProvider,
+      ],
+      langRestrict: "en",
+    };
+  }
+  // Korean (or other non-Latin) title → Korean providers first.
+  return { providers: ALL_PROVIDERS };
+};
 
 /**
  * Search every enabled provider in priority order and stop at the first
@@ -71,11 +105,14 @@ export const searchBooksMulti = async (
   if (!t)
     return { candidates: [], triedProviders: [], hitProvider: null };
 
+  const { providers, langRestrict } = routeForTitle(t);
+  const searchOpts: BookSearchOptions = { ...opts, langRestrict };
+
   const tried: string[] = [];
-  for (const p of PROVIDERS) {
+  for (const p of providers) {
     if (!p.isEnabled()) continue;
     tried.push(p.id);
-    const res = await p.search(t, author, opts);
+    const res = await p.search(t, author, searchOpts);
     if (res.length > 0) {
       const sorted = [...res].sort((a, b) => b.score - a.score);
       return {
@@ -189,7 +226,7 @@ export const enabledProviders = (): {
   label: string;
   enabled: boolean;
 }[] =>
-  PROVIDERS.map((p) => ({
+  ALL_PROVIDERS.map((p) => ({
     id: p.id,
     label: p.label,
     enabled: p.isEnabled(),

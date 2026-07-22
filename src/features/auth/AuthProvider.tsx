@@ -12,6 +12,7 @@ import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/lib/supabase";
 import { wipeLocalData } from "@/sync/wipeLocalData";
 import { syncOnce } from "@/sync/syncEngine";
+import { identifyPurchaseUser, resetPurchaseUser } from "@/features/iap/purchases";
 
 /**
  * Magic-link callback URL.
@@ -92,6 +93,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mounted) {
           setSession(data.session ?? null);
           userIdRef.current = data.session?.user?.id ?? null;
+          // Tie RevenueCat's identity to the user already logged in at launch,
+          // so voluntary tips are attributed to the right account.
+          if (userIdRef.current) void identifyPurchaseUser(userIdRef.current);
         }
       } catch (e) {
         console.warn("[auth] getSession failed:", e);
@@ -121,12 +125,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             userIdRef.current = nextId;
             setSession(nextSession);
+            void identifyPurchaseUser(nextId);
             hardReloadHome();
             return;
           }
 
           userIdRef.current = nextId;
           setSession(nextSession);
+
+          // Keep RevenueCat's identity in step with sign-in / sign-out so
+          // tips are attributed to the account (and reset to anonymous when
+          // the user logs out). Both helpers no-op on web / when unconfigured.
+          if (nextId && nextId !== prevId) {
+            void identifyPurchaseUser(nextId);
+          } else if (!nextId && prevId) {
+            void resetPurchaseUser();
+          }
         });
         unsub = () => data.subscription.unsubscribe();
       } catch (e) {

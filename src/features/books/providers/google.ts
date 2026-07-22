@@ -29,6 +29,7 @@ export const googleBooksProvider: BookSearchProvider = {
     const candidates = await searchGoogleBooks(title, author, {
       maxResults: opts.maxResults ?? 6,
       signal: opts.signal,
+      langRestrict: opts.langRestrict,
     });
     // The legacy helper already produced its own score field; we re-map
     // to the canonical `BookCandidate` shape so the orchestrator can

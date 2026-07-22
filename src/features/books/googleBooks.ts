@@ -145,11 +145,14 @@ const runQuery = async (
   author: string | null,
   maxResults: number,
   signal?: AbortSignal,
+  langRestrict?: string,
 ): Promise<BookCandidate[]> => {
   const url = new URL(ENDPOINT);
   url.searchParams.set("q", q);
   url.searchParams.set("maxResults", String(maxResults));
   url.searchParams.set("printType", "books");
+  // Latin-script titles: bias toward English editions (better covers/meta).
+  if (langRestrict) url.searchParams.set("langRestrict", langRestrict);
 
   try {
     const res = await fetch(url.toString(), { signal });
@@ -187,22 +190,23 @@ const runQuery = async (
 export const searchBooks = async (
   title: string,
   author?: string | null,
-  opts: { maxResults?: number; signal?: AbortSignal } = {},
+  opts: { maxResults?: number; signal?: AbortSignal; langRestrict?: string } = {},
 ): Promise<BookCandidate[]> => {
   const t = title.trim();
   if (!t) return [];
   const a = author?.trim() || null;
   const maxResults = opts.maxResults ?? 6;
+  const lang = opts.langRestrict;
 
   // Pass 1 — strict intitle/inauthor.
   const strictParts: string[] = [`intitle:"${t.replace(/"/g, "")}"`];
   if (a) strictParts.push(`inauthor:"${a.replace(/"/g, "")}"`);
-  let results = await runQuery(strictParts.join("+"), t, a, maxResults, opts.signal);
+  let results = await runQuery(strictParts.join("+"), t, a, maxResults, opts.signal, lang);
 
   // Pass 2 — free-text fallback if strict returned nothing useful.
   if (results.length === 0) {
     const freeText = a ? `${t} ${a}` : t;
-    results = await runQuery(freeText, t, a, maxResults, opts.signal);
+    results = await runQuery(freeText, t, a, maxResults, opts.signal, lang);
   }
 
   return results;

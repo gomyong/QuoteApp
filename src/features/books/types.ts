@@ -32,11 +32,18 @@ export type BookCandidate = {
   provider: BookProviderId;
 };
 
-export type BookProviderId = "kakao" | "naver" | "google";
+export type BookProviderId = "kakao" | "naver" | "google" | "openLibrary";
 
 export type BookSearchOptions = {
   maxResults?: number;
   signal?: AbortSignal;
+  /**
+   * Restrict results to a language (Google Books `langRestrict`, e.g. "en").
+   * Set by the orchestrator for Latin-script titles so English editions and
+   * their higher-quality covers rank first. Providers that don't support it
+   * simply ignore the hint.
+   */
+  langRestrict?: string;
 };
 
 export type BookSearchProvider = {
