@@ -54,6 +54,7 @@ const Capture = () => {
       );
       lastImageRef.current = null;
       setSaved(true);
+      toast.success(t("capture.saved"));
       void syncOnce();
 
       // Fire-and-forget: pull a cover through the provider chain for the

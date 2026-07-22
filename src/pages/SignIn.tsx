@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, KeyRound, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, Mail, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -55,6 +55,13 @@ const SignIn = () => {
     if (user) navigate("/", { replace: true });
   }, [user, navigate]);
 
+  // Close the sign-in screen. Prefer going back to wherever the user came
+  // from; fall back to home when there's no in-app history (e.g. deep link).
+  const handleClose = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/", { replace: true });
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!email.trim()) return;
@@ -94,6 +101,15 @@ const SignIn = () => {
 
   return (
     <div className="h-dvh bg-background overflow-y-auto overscroll-contain flex items-center justify-center px-5 py-10">
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label={t("common.close")}
+        className="absolute right-4 top-[calc(env(safe-area-inset-top,0px)+1rem)] z-10 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-glass-border/20 active:scale-95"
+        style={{ touchAction: "manipulation" }}
+      >
+        <X size={22} />
+      </button>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
