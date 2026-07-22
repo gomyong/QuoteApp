@@ -1,13 +1,13 @@
 # Quote — 제품 로드맵 (Product Roadmap)
 
-> 최종 업데이트: **2026-07-18**
+> 최종 업데이트: **2026-07-22**
 > 이 문서는 `WORK_LOG.md`(구현 이력), `LAUNCH_CHECKLIST.md`(출시 체크리스트),
 > `IAP_STEP1_APPSTORE_DONATION.md`(후원 IAP)를 하나로 묶어 **앞으로의 방향**을
 > 정리한 살아있는 계획 문서입니다. 완료되면 각 단계에 체크하고, 새 아이디어는
 > "장기 골" 또는 "백로그"에 추가하세요.
 >
 > **지금 바로 체크하며 진행할 문서:** [`RELEASE_NOW.md`](./RELEASE_NOW.md)
-> (개발자 출시 대기 → 1.0 릴리스 → 외국어 표지 개선까지)
+> (1.0.1 심사 제출 · 출시 후 운영)
 
 기본 원칙: **"실현 불가능/한계"를 먼저 말하지 않는다.** 각 항목마다
 *가능한 구현 경로*를 먼저 찾고, 제약은 그 경로 안에서 관리한다.
@@ -19,12 +19,13 @@
 - **플랫폼:** iOS(Capacitor) 우선 · 웹/PWA 동시 동작 · Android 코드 공유 준비됨
 - **코어:** 온디바이스 OCR(Apple Vision / ML Kit / Tesseract 폴백) → 문장 저장
 - **동기화:** Supabase(Postgres/Auth/Storage) + 오프라인 우선(IndexedDB + outbox)
-- **표지 매칭:** Kakao → Naver → Google Books 순차 폴백 (+ IndexedDB 캐시)
-- **i18n:** 한국어 / 영어 / 일본어 UI 문자열 3종 (폰트 스택 로케일별 스왑)
-- **후원:** RevenueCat + StoreKit 소비형 IAP 3티어 — **v1 포함**, Sandbox 결제 검증 완료 (2026-07-18)
-- **Supabase:** 마이그레이션 0001~0005 적용 확인 · Auth redirect 등록
-- **App Store:** 1.0 **심사 통과 · 개발자 출시 대기 중** (수동 「이 버전 릴리스」 대기; small IAP 단독 심사 병행 가능)
-  → 실행 체크리스트: [`RELEASE_NOW.md`](./RELEASE_NOW.md)
+- **표지 매칭:** locale-aware — 한글: Kakao→Naver→Google→Open Library / 라틴: Google→Open Library→…
+- **i18n:** 한국어 / 영어 / 일본어 UI 문자열 3종
+- **후원:** RevenueCat + StoreKit consumable 3티어 (small/medium/large **전부 Approved**)
+- **Supabase:** 0001~0005 적용 · Auth redirect · **브랜딩 이메일 템플릿** 적용
+- **App Store 1.0:** **출시 완료** (2026-07-21) — https://apps.apple.com/kr/app/id6790071377
+- **App Store 1.0.1:** **build 3 업로드 · 심사 제출 대기** (2026-07-22)
+  → 실행 체크리스트: [`RELEASE_NOW.md`](./RELEASE_NOW.md) Phase F
 
 ---
 
@@ -32,9 +33,9 @@
 
 | 구간 | 단계 | 목표 | 예상 규모 |
 | --- | --- | --- | --- |
-| **출시** | Step 0 | 1.0 릴리스 + 운영 안정화 | 즉시 |
-| **단기** | Step 1 | 1.0.1 핫픽스 | 승인 후 1~2주 |
-| **단기** | Step 2 ⭐ | 외국어(EN/US·CA) 표지 API 개선 | 3~6일 |
+| **출시** | Step 0 | 1.0 릴리스 + 운영 안정화 | ✅ 완료 |
+| **단기** | Step 1 | 1.0.1 (리뷰 피드백 + IAP 연동) | ⏳ 심사 대기 |
+| **단기** | Step 2 ⭐ | 외국어(EN/US·CA) 표지 API 개선 | 🔄 1.0.1에 핵심 반영 · hit rate 측정 남음 |
 | **중기** | Step 3 | 인증·딥링크 UX | 2~3일 |
 | **중기** | Step 4 | PWA/웹 마감 | 0.5~1일 |
 | **중기** | Step 5 | Android 출시 | 1~2주 |
@@ -48,69 +49,57 @@
 
 # Part 1 — 출시 & 근시일 (Step 0 ~ Step 5)
 
-## Step 0 — 출시 직후 운영 (지금 ~ 승인 후 1주)
+## Step 0 — 출시 직후 운영 ✅ (1.0)
 
 **목표:** 1.0을 안정적으로 릴리스하고 문서·콘솔 상태를 실제와 일치시킨다.
 
-- [ ] App Review 결과 대응 (거절 시 IAP 스크린샷/리뷰 노트 재제출)
-- [ ] 승인 후 **수동 릴리스** 클릭
-- [ ] RevenueCat: In-App Purchase Key(.p8) + 상품 3개 매핑 재확인
-- [ ] 실기기 **Sandbox 후원** end-to-end (성공/취소/오류)
-- [ ] Supabase: 마이그레이션 `0003~0005` 적용 + Auth redirect `app.quote.note://auth/callback`
-- [ ] Supabase 대시보드 보안 체크리스트 (`supabase/README.md` §Pre-launch)
-- [ ] 랜딩(`docs/index.html`) "출시 알림" CTA → App Store URL 교체
-- [ ] **문서 동기화:** `LAUNCH_CHECKLIST.md` / `DEPLOYMENT.md`의 "IAP v1 미포함" 문구를 실제(IAP 포함 제출)와 맞게 수정
-
-**완료 기준:** 실사용자 1명이 로그인 → OCR → 저장 → 표지 자동매칭 → (선택) 후원까지 오류 없이 통과.
+- [x] 1.0 **Ready for Sale** 릴리스 (2026-07-21)
+- [x] RevenueCat: IAP 3개 Approved (small 포함, 2026-07-22)
+- [x] Supabase: 0003~0005 + Auth redirect + **이메일 템플릿**
+- [x] 랜딩 App Store URL CTA
+- [x] 초기 스모크 테스트 (로그인·OCR·저장)
+- [ ] App Review / 크래시 / 문의 **지속 모니터링**
 
 ---
 
-## Step 1 — 1.0.1 핫픽스 (승인 후 1~2주)
+## Step 1 — 1.0.1 ⏳ (심사 제출 대기)
 
-**목표:** 리뷰·초기 사용자 피드백만 빠르게 처리.
+**목표:** 초기 사용자 리뷰 피드백 + 표지/IAP 개선.
 
-- [ ] 크래시 / 동기화 실패 / OCR 엣지케이스 수정
-- [ ] IAP: RevenueCat `appUserID` ↔ Supabase user 연동 (재설치/로그아웃 후 추적)
-- [ ] Settings 표지 진단 UI에 **provider 이름** 표기 (현재 주석은 Google만 언급)
-- [ ] `0003_input_hardening.sql` 적용 후 데이터 검증 → `VALIDATE CONSTRAINT`
-
-**완료 기준:** 1.0.1 배포, 치명적 이슈 0건.
+- [x] 리뷰 피드백 UX (저장 토스트, OTP 문구, 로그인 닫기, 책 상세 문장 추가, placeholder)
+- [x] 홈 최근 기록 10개
+- [x] IAP: RevenueCat `appUserID` ↔ Supabase user 연동
+- [x] Archive + upload **1.0.1 (build 3)**
+- [ ] Connect → 1.0.1 버전 → 빌드 3 → **심사 제출**
+- [ ] 승인 후 릴리스
+- [ ] (후순위) `0003` → `VALIDATE CONSTRAINT`
 
 ---
 
 ## Step 2 ⭐ — 외국어(EN / US·CA) 표지 API 개선
 
-**배경:** 현재 순서는 Kakao → Naver → Google. 영어권 사용자에게 Kakao/Naver는
-거의 무의미하고 Google Books 품질에 전적으로 의존한다. Google은 (a) 저해상도
-썸네일, (b) 판본/부제 메타 편차, (c) 북미 신간·독립출판 누락 이슈가 있다.
+**상태:** 1.0.1에 **핵심 구현 반영**. 출시 후 hit rate 측정·미세 튜닝 남음.
 
-**목표:** EN / US·CA 도서 매칭률과 커버 품질을 실측 기준으로 끌어올린다.
-
-### 2-A. 베이스라인 측정 (0.5~1일)
+### 2-A. 베이스라인 측정 (1.0.1 출시 후)
 - [ ] 테스트 코퍼스 30~50권 (영문 베스트셀러, 캐나다 출판, 부제/시리즈 변형 포함)
-- [ ] Settings "표지 다시 찾기"로 현재 hit rate 기록
+- [ ] Settings "표지 다시 찾기"로 hit rate 기록
 - [ ] 실패 유형 분류: no result / wrong edition / low-res / no cover image
 
-### 2-B. 로케일 인식 라우팅 (1~2일)
-- [ ] 앱 언어 또는 제목 스크립트(한글 vs 라틴)로 provider 순서 분기
-  - 한글 제목: **Kakao → Naver → Google → Open Library**
-  - 라틴 제목: **Google(개선) → Open Library → (선택) Kakao/Naver**
-- [ ] `bookSearchService.ts`의 고정 `PROVIDERS` 배열을 locale-aware로 변경
+### 2-B. 로케일 인식 라우팅 ✅ (1.0.1)
+- [x] 제목 스크립트(한글 vs 라틴)로 provider 순서 분기
+- [x] `bookSearchService.ts` locale-aware routing
 
-### 2-C. Google Books 개선 (1일)
-- [ ] `isbn:` 직조회 pass 추가 (ISBN이 있으면 최우선)
-- [ ] `langRestrict` (영어 UI/라틴 제목 시 `en`)
-- [ ] 커버 URL 고해상도화 (`zoom` 조정 / Open Library 대체)
+### 2-C. Google Books 개선 🔄
+- [x] `langRestrict=en` (라틴 제목)
+- [ ] `isbn:` 직조회 pass (ISBN 있으면 최우선)
 - [ ] `country` / `printType` 파라미터 실험
 
-### 2-D. Open Library provider 추가 (1~2일)
-- [ ] `src/features/books/providers/openLibrary.ts` 신규
-- [ ] ISBN → `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg`
-- [ ] 제목/저자 검색 → ISBN 확보 → cover (무료·CORS 허용·US 카탈로그 양호)
+### 2-D. Open Library provider ✅ (1.0.1)
+- [x] `src/features/books/providers/openLibrary.ts`
+- [x] ISBN / 제목·저자 검색 → cover
 
-### 2-E. 수동 fallback UI (1~2일, 강력 권장)
+### 2-E. 수동 fallback UI (후순위)
 - [ ] 책 상세/편집에서 **표지 직접 선택·업로드**
-- [ ] API 3곳이 모두 실패해도 UX가 끊기지 않도록
 
 ### 2-F. (선택) ISBN 바코드 스캔
 - [ ] 표지 뒷면 ISBN 스캔 → 정확 매칭 (1.1+)

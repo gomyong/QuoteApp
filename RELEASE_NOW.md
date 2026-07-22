@@ -1,10 +1,9 @@
-# Quote — 1.0 출시 + 외국어 표지 개선 실행 체크리스트
+# Quote — 출시 · 1.0.1 심사 실행 체크리스트
 
-> 상태: **개발자 출시 대기 중** (심사 통과, 수동 릴리스 대기)
-> 목표: **1.0 공개 출시 안정화 + EN/US·CA 표지 개선까지** 완료
-> 최종 업데이트: **2026-07-18**
+> 상태: **1.0 출시 완료** · **1.0.1 (build 3) App Store Connect 업로드 · 심사 제출 대기**
+> App Store: https://apps.apple.com/kr/app/id6790071377
+> 최종 업데이트: **2026-07-22**
 >
-> 이 문서를 열어 두고 위에서부터 순서대로 체크하세요.
 > 관련 상세: `ROADMAP.md` · `LAUNCH_CHECKLIST.md` · `IAP_STEP1_APPSTORE_DONATION.md`
 
 ---
@@ -12,21 +11,15 @@
 ## 진행 순서 한눈에
 
 ```
-Phase A  출시 직전 콘솔/백엔드 점검  (오늘, 릴리스 전)
-Phase B  1.0 공개 릴리스             (점검 후 바로)
-Phase C  출시 직후 안정화            (릴리스 당일~1주)
-Phase D  외국어 표지 개선 → 1.0.1    (다음 코드 작은업)
-Phase E  (선택) iPad / iPhone only   (다음 버전 결정)
+Phase A~B  1.0 출시                    ✅ 완료 (2026-07-21)
+Phase C    출시 직후 운영              🔄 진행 중 (리뷰·모니터링)
+Phase D    표지 개선 → 1.0.1           ✅ 코드 완료 · ⏳ 심사 대기
+Phase F    1.0.1 Connect 제출          ⏳ 지금 할 일
+Phase E    (선택) iPad 결정            나중
 ```
 
-**원칙:** Phase A를 끝내고 Phase B(릴리스)를 누르세요.
-표지 개선(Phase D)은 출시 **후** 다음 버전으로 올리면 됩니다.
-
-> **2026-07-19 안정성 패치:** 로그아웃 로컬 wipe, outbox dead-letter, pull 페이지네이션,
-> 이미지 업로드 순서, 표지 Abort 캐시, Capture 저장 에러 UI 등이 코드에 반영됨.
->
-> **빌드 업로드 완료 (2026-07-19):** `1.0 (2)` → App Store Connect 업로드 성공 (처리 중).
-> 아래 **B0** 단계를 끝낸 뒤 「이 버전 릴리스」를 누르세요.
+> **2026-07-22 1.0.1 (build 3):** 리뷰 피드백 UX + Open Library/locale 표지 + RevenueCat 연동.
+> Archive + App Store Connect 업로드 완료. Connect에서 **1.0.1 버전 생성 → 빌드 3 첨부 → 심사 제출** 필요.
 
 ---
 
@@ -46,7 +39,7 @@ Phase E  (선택) iPad / iPhone only   (다음 버전 결정)
   ⏳ small만 심사 중(In Review) → 승인 후 자동 반영
   ```
 - [x] `app.quote.note.tip.small` Consumable 생성 → 단독 심사 제출 (2026-07-18)
-- [ ] small IAP **심사 승인 확인** (릴리스와 병행 가능 — medium/large로 Sandbox 테스트 가능)
+- [x] small IAP **심사 승인** — `app.quote.note.tip.small` Approved (2026-07-22)
 - [x] `.env.local`에 RevenueCat key + product IDs 확인 (빌드 반영됨)
 
 ## A2. Sandbox 후원 최종 확인 (실기기)
@@ -71,7 +64,7 @@ Phase E  (선택) iPad / iPhone only   (다음 버전 결정)
   ```
   `app.quote.note://auth/callback` 추가 (OTP만 쓰면 선택, 매직링크 탭 복귀용)
   ```
-- [x] (선택) Magic Link 이메일 템플릿 `{{ .Token }}` 확인
+- [x] (선택) Magic Link / Confirm signup **브랜딩 템플릿** 적용 (Supabase Dashboard, 2026-07-21)
 - [x] (선택) `supabase/README.md` Pre-launch 보안 체크리스트
 
 ## A4. 문서 불일치 정리 (DEPLOYMENT 등)
@@ -87,91 +80,99 @@ Phase E  (선택) iPad / iPhone only   (다음 버전 결정)
 ## B0. 안정성 패치 빌드 교체 (필수 — 옛 빌드 1로 릴리스하지 말 것)
 
 - [x] 코드 패치 + `1.0 (2)` Archive + App Store Connect 업로드 (2026-07-19)
-- [ ] Connect → **TestFlight / 활동** 에서 빌드 **2** 처리 완료(✓) 대기 (수 분~1시간)
-- [ ] Quote → **iOS 앱 1.0** → 빌드 섹션에서 **빌드 2** 선택 (빌드 1이 붙어 있으면 교체)
-- [ ] **심사용으로 제출** (Submit for Review) — 빌드가 바뀌면 재심사 필요
-- [ ] 재승인 후 상태가 다시 **개발자 출시 대기**가 되면 B1으로
+- [x] Connect → **TestFlight / 활동** 에서 빌드 **2** 처리 완료(✓) 대기 (수 분~1시간)
+- [x] Quote → **iOS 앱 1.0** → 빌드 섹션에서 **빌드 2** 선택 (빌드 1이 붙어 있으면 교체)
+- [x] **심사용으로 제출** (Submit for Review) — 빌드가 바뀌면 재심사 필요
+- [x] 재승인 후 **개발자 출시 대기** → 릴리스 완료 (2026-07-21)
 
-> Review Notes 예시: `Stability hotfix build 2: sign-out local wipe, sync dead-letter, pull pagination, cover abort cache. Tip IAP unchanged.`
+## B1. App Store Connect — 1.0 ✅
 
-## B1. App Store Connect
+- [x] Quote **1.0** → **배포 준비 됨 / Ready for Sale** (2026-07-21)
+- [x] App Store 공개 URL: https://apps.apple.com/kr/app/id6790071377
 
-- [ ] App Store Connect → Quote → **1.0** 버전 상태 = **개발자 출시 대기 중** 확인 (**빌드 2**인지 확인)
-- [ ] **이 버전 릴리스** (또는 Release This Version) 클릭
-- [ ] 상태가 **판매 준비됨 / Ready for Sale** 또는 Processing으로 바뀌는지 확인  
-  ```
-  (스토어 반영까지 수 분~수 시간 걸릴 수 있음)
-  ```
-- [ ] App Store 공개 URL 복사해 두기  
-  ```
-  예: `https://apps.apple.com/app/idXXXXXXXX`  
-  (App Store Connect → App Information / App Store 미리보기에서 확인)
-  ```
+## B2. 랜딩 페이지 ✅
 
-## B2. 랜딩 페이지 반영
-
-- [ ] `docs/index.html`의 「출시 알림」 CTA를 **실 App Store URL**로 교체
-- [ ] GitHub Pages에 반영 (`docs/` push 또는 Pages 배포)
-- [ ] 모바일에서 랜딩 → App Store 링크 열리는지 확인
+- [x] `docs/index.html` CTA → App Store URL (2026-07-21)
+- [x] GitHub Pages push
+- [ ] (선택) 모바일에서 랜딩 → App Store 링크 재확인
 
 ---
 
 # Phase C — 출시 직후 안정화 (당일 ~ 1주)
 
-## C1. 실사용 스모크 테스트 (프로덕션 빌드 / TestFlight 또는 스토어)
+## C1. 실사용 스모크 테스트
 
-- [ ] 매직링크 또는 OTP 로그인
-- [ ] OCR 촬영 → 문장 저장
-- [ ] 서재에서 표지 자동 매칭 (한글 책 1권 이상)
-- [ ] (선택) 실계정 후원 — **실결제**는 소액만, 또는 Sandbox 유지
-- [ ] 설정 → 계정 삭제 경로가 보이는지 확인 (실제 삭제는 테스트 계정만)
+- [x] 매직링크 또는 OTP 로그인 (2026-07-22)
+- [x] OCR 촬영 → 문장 저장
+- [x] 서재에서 표지 자동 매칭 (한글 책)
+- [ ] (선택) 실계정 후원 — 소액 실결제
+- [ ] 설정 → 계정 삭제 (테스트 계정만)
 
-## C2. IAP_STEP1 잔여 (병행 가능, 1.0.1에 넣어도 됨)
+## C2. IAP / RevenueCat
 
+- [x] RevenueCat `appUserID` ↔ Supabase user 연동 (1.0.1 코드, 2026-07-22)
 - [ ] (선택) RevenueCat analytics: `view_tip_sheet`, `purchase_success/fail`
-- [ ] (선택) RevenueCat `appUserID` ↔ Supabase user 로그인/로그아웃 시 연동
 
 ## C3. 모니터링
 
-- [ ] App Store Connect → 평가/리뷰 / 크래시 리포트 확인
-- [ ] RevenueCat 대시보드에 tip 이벤트 들어오는지 확인
-- [ ] Supabase → `contact_inquiries`에 문의가 쌓이는지 확인
+- [ ] App Store Connect → 평가/리뷰 / 크래시 리포트 주기 확인
+- [ ] RevenueCat → tip 이벤트
+- [ ] Supabase → `contact_inquiries` 문의
 
 ---
 
-# Phase D — 외국어 표지 개선 → 1.0.1 (다음 코드 작업)
+# Phase D — 외국어 표지 개선 → 1.0.1 ✅ (코드 완료)
 
-> 1.0이 스토어에 오른 뒤 바로 착수. 완료 후 1.0.1로 제출.
+> 1.0.1 (build 3)에 포함됨. 심사 통과 후 스토어 반영.
 
-## D1. 베이스라인 (반나절)
+## D1. 베이스라인 (후속 — 1.0.1 출시 후)
 
 - [ ] EN 도서 테스트 목록 20~30권 준비 (US/CA 포함)
-- [ ] Settings → 표지 다시 찾기로 **현재 hit rate** 기록
+- [ ] Settings → 표지 다시 찾기로 **hit rate** 기록
 - [ ] 실패 유형 메모: no result / wrong edition / low-res / no cover
 
-## D2. 구현 (3~5일)
+## D2. 구현 ✅
 
-- [ ] locale-aware provider 순서  
-  ```
-  한글: Kakao → Naver → Google → Open Library  
-  영어/라틴: Google(개선) → Open Library → …
-  ```
-- [ ] Google Books: `isbn:` 직조회, `langRestrict`, 커버 해상도 개선
-- [ ] Open Library provider 추가 (`providers/openLibrary.ts`)
-- [ ] Settings 표지 진단에 **provider 이름** 표시
-- [ ] (권장) 책 상세에서 표지 수동 선택/업로드 fallback
+- [x] locale-aware provider 순서 (한글 vs 라틴 제목 스크립트)
+- [x] Google Books: `langRestrict=en` (라틴 제목)
+- [x] Open Library provider (`providers/openLibrary.ts`)
+- [ ] (후순위) Settings 표지 진단에 provider 이름 표시
+- [ ] (후순위) 책 상세 표지 수동 선택/업로드 fallback
+- [ ] (후순위) Google `isbn:` 직조회 pass
 
 ## D3. 검증 & 배포
 
-- [ ] EN 코퍼스 hit rate 재측정 (목표: **85%+**)
-- [ ] `npm run build` + `npx cap sync ios`
-- [ ] Xcode Archive → App Store Connect 업로드 (버전 **1.0.1**)
-- [ ] 심사 제출 → 승인 후 릴리스
+- [ ] EN 코퍼스 hit rate 재측정 (목표 **85%+**)
+- [x] `npm run build` + Archive + App Store Connect 업로드 (**1.0.1 build 3**, 2026-07-22)
+- [ ] Connect → **1.0.1** 버전 생성 → 빌드 3 첨부 → **심사 제출**
+- [ ] 승인 후 릴리스
 
-## D4. 1.0.1에 같이 넣어도 좋은 항목
+## D4. 1.0.1에 포함된 기타 항목 ✅
 
-- [ ] `0003` 적용 후 데이터 이상 없으면 `VALIDATE CONSTRAINT`
-- [ ] C2의 RevenueCat `appUserID` ↔ Supabase 연동
+- [x] 홈 최근 기록 10개
+- [x] 저장 토스트 · OTP 문구 · 로그인 닫기 · 책 상세 문장 추가
+- [x] RevenueCat `appUserID` ↔ Supabase 연동
+- [ ] (후순위) `0003` → `VALIDATE CONSTRAINT`
+
+---
+
+# Phase F — 1.0.1 App Store Connect (지금)
+
+- [ ] TestFlight/활동 → 빌드 **3** 처리 완료(✓) 대기
+- [ ] Quote → **+ 버전** → **1.0.1** 생성 (없으면)
+- [ ] **이번 버전의 새로운 기능** (릴리스 노트) 작성
+- [ ] 빌드 **3** 선택 → **심사용으로 제출**
+- [ ] 승인 후 **릴리스** (자동/수동 선택)
+
+**릴리스 노트 예시 (한국어):**
+```
+· 문장 저장 시 확인 알림 추가
+· 서재에서 해당 책에 바로 문장 추가
+· 로그인 화면 개선 (닫기 버튼, 인증 코드 안내)
+· 영어 도서 표지 자동 매칭 개선
+· 홈 최근 기록 10개까지 표시
+· 안정성 및 후원 기능 개선
+```
 
 ---
 
@@ -206,14 +207,9 @@ Phase E  (선택) iPad / iPhone only   (다음 버전 결정)
 
 ---
 
-## 오늘/이번 주 추천 실행 순서 (짧게)
+## 오늘/이번 주 추천 실행 순서
 
-1. **A1** RevenueCat `.p8` 확인
-2. **A2** Sandbox 후원 성공/취소
-3. **A3** Supabase `0003~0005` + redirect
-4. **B1** 「이 버전 릴리스」 클릭
-5. **B2** 랜딩 App Store 링크 교체
-6. **C1** 스모크 테스트
-7. 준비되면 **Phase D** 코드 작업 시작 (저와 함께)
-
-Phase A가 끝나면 바로 릴리스해도 됩니다. Phase D는 “출시하고 나서” 하면 됩니다.
+1. **Phase F** Connect → 1.0.1 → 빌드 3 → 심사 제출
+2. **Phase C3** 리뷰·크래시·문의 모니터링
+3. 1.0.1 승인 후 **Phase D1** EN 표지 hit rate 측정
+4. 필요 시 **Phase E** iPad 전략 결정
