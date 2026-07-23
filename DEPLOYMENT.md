@@ -67,21 +67,28 @@ In Xcode:
 
 If you regenerate `ios/` later, re-run `npm run ios:patch` to re-add the camera/photo permission strings to `Info.plist`.
 
-## 3) Android (Capacitor)
+## 3) Android (Capacitor) — Step 5
+
+Full runbook: [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
 
 ```bash
-npm run android:add    # one-time: creates android/
-npm run android        # build web, sync to native, open Android Studio
+# One-time (already done in repo — re-run only if android/ was deleted)
+npm run android:add    # cap add android + manifest patch
+
+# Everyday
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  # JDK 17+
+npm run android        # build web, sync, open Android Studio
 ```
 
 In Android Studio:
 
-1. Wait for Gradle sync to finish.
-2. Open `android/app/src/main/AndroidManifest.xml` and confirm camera permission is present:
-   - `<uses-permission android:name="android.permission.CAMERA" />`
-   - `<uses-feature android:name="android.hardware.camera" android:required="false" />`
-3. Run on a real device.
-4. For Play Store: **Build → Generate Signed App Bundle / APK → Android App Bundle** with your upload keystore.
+1. Wait for Gradle sync.
+2. Run on a **real device** (camera + ML Kit).
+3. Confirm logcat shows `MlKit` OCR (not only Tesseract).
+4. For Play: **Build → Generate Signed App Bundle** with your upload keystore.
+
+Native OCR: `android/.../MlKitOcrPlugin.java` (Latin + Korean). Tips: set
+`VITE_REVENUECAT_ANDROID_API_KEY` in `.env.local` after RevenueCat Android app is linked.
 
 ---
 

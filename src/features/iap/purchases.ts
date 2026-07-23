@@ -1,18 +1,18 @@
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/lib/supabase";
 import {
-  REVENUECAT_IOS_API_KEY,
+  revenueCatApiKey,
   isIapPreviewMode,
   tipProductIds,
 } from "@/config/support";
 import { TIP_PREVIEW_TIERS } from "@/config/tipPreview";
 
 /**
- * RevenueCat (StoreKit) service wrapper for voluntary tips.
+ * RevenueCat (StoreKit / Play Billing) service wrapper for voluntary tips.
  *
  * Everything here is guarded so it is a no-op on web/dev or when no API key
- * is configured. The native plugin is dynamically imported so it never enters
- * the web bundle graph.
+ * is configured for the current platform. The native plugin is dynamically
+ * imported so it never enters the web bundle graph.
  */
 
 export type TipProduct = {
@@ -42,7 +42,8 @@ let configurePromise: Promise<boolean> | null = null;
  * callers can fall back to a "coming soon" state.
  */
 export const ensurePurchasesConfigured = async (): Promise<boolean> => {
-  if (!isNative() || REVENUECAT_IOS_API_KEY.length === 0) return false;
+  const apiKey = revenueCatApiKey();
+  if (!isNative() || apiKey.length === 0) return false;
   if (!configurePromise) {
     configurePromise = (async () => {
       try {
@@ -59,7 +60,7 @@ export const ensurePurchasesConfigured = async (): Promise<boolean> => {
           if (import.meta.env.DEV) {
             await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
           }
-          await Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY, appUserID });
+          await Purchases.configure({ apiKey, appUserID });
         }
         return true;
       } catch (e) {
@@ -85,7 +86,7 @@ export const identifyPurchaseUser = async (userId: string): Promise<void> => {
 
 /** Reset to an anonymous RevenueCat identity on sign-out (optional). */
 export const resetPurchaseUser = async (): Promise<void> => {
-  if (!isNative() || REVENUECAT_IOS_API_KEY.length === 0) return;
+  if (!isNative() || revenueCatApiKey().length === 0) return;
   try {
     const { Purchases } = await loadPlugin();
     const { isConfigured } = await Purchases.isConfigured();

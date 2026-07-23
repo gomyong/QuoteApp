@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -31,7 +31,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { repo } from "@/sync/repo";
-import { retryMissingCovers } from "@/features/books/useEnsureCovers";
+import {
+  retryMissingCovers,
+  type RetryCoversResult,
+} from "@/features/books/useEnsureCovers";
+import { enabledProviders } from "@/features/books/bookSearchService";
 import {
   getSyncStatus,
   retryDeadLetters,
@@ -45,8 +49,9 @@ import { SUPPORT_ENABLED, isIapPreviewMode, isTipSheetEnabled } from "@/config/s
 import { TIP_PREVIEW_SETTINGS } from "@/config/tipPreview";
 import TipSheet from "@/components/TipSheet";
 
-/** Public support URL (GitHub Pages on QuoteApp). */
-const SUPPORT_URL = "https://gomyong.github.io/QuoteApp/#contact";
+import {
+  QUOTE_SUPPORT_URL,
+} from "@/config/publicUrls";
 
 /** Human-friendly "N minutes ago"-style formatting via i18n keys. */
 const useRelativeTime = () => {
@@ -80,10 +85,18 @@ const Settings = () => {
   const [busy, setBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
   const [coverBusy, setCoverBusy] = useState(false);
+  const [coverResult, setCoverResult] = useState<RetryCoversResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
   const formatRelative = useRelativeTime();
+
+  const providers = useMemo(() => enabledProviders(), []);
+
+  const providerOnOff = (id: string) =>
+    providers.find((p) => p.id === id)?.enabled
+      ? t("settings.covers_on")
+      : t("settings.covers_off");
 
   useEffect(() => {
     if (searchParams.get("openTip") === "1") setTipOpen(true);
@@ -111,8 +124,10 @@ const Settings = () => {
 
   const triggerCoverRetry = async () => {
     setCoverBusy(true);
+    setCoverResult(null);
     try {
-      await retryMissingCovers();
+      const r = await retryMissingCovers();
+      setCoverResult(r);
     } finally {
       setCoverBusy(false);
     }
@@ -341,7 +356,7 @@ const Settings = () => {
         </section>
 
         <section className="glass rounded-2xl p-4 mt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BookMarked size={14} className="text-accent" />
               <span className="text-sm text-foreground">{t("settings.covers")}</span>
@@ -355,6 +370,77 @@ const Settings = () => {
               {coverBusy ? t("settings.covers_searching") : t("settings.covers_retry")}
             </button>
           </div>
+
+          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+            {t("settings.covers_desc")}
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+            {t("settings.covers_providers_status", {
+              kakao: providerOnOff("kakao"),
+              naver: providerOnOff("naver"),
+              openLibrary: providerOnOff("openLibrary"),
+              google: providerOnOff("google"),
+            })}
+          </p>
+
+          {coverResult && (
+            <dl className="text-xs text-muted-foreground space-y-1.5 pt-2 mt-2 border-t border-glass-border/20">
+              <div className="flex justify-between">
+                <dt>{t("settings.covers_total")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.totalBooks })}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>{t("settings.covers_already")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.alreadyCovered })}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>{t("settings.covers_tried")}</dt>
+                <dd className="text-foreground">
+                  {t("settings.covers_book_count", { count: coverResult.tried })}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>{t("settings.covers_result")}</dt>
+                <dd className="text-foreground">
+                  ↑{coverResult.updated} / ↓{coverResult.failed}
+                </dd>
+              </div>
+              {coverResult.totalBooks === 0 && (
+                <div className="pt-1 text-[11px] text-muted-foreground italic">
+                  {t("settings.covers_no_books")}
+                </div>
+              )}
+              {coverResult.entries.length > 0 && (
+                <div className="pt-2 mt-2 border-t border-glass-border/20 space-y-0.5">
+                  {coverResult.entries.slice(0, 12).map((entry) => (
+                    <div
+                      key={entry.bookId}
+                      className={
+                        entry.ok
+                          ? "text-foreground text-[11px] break-words"
+                          : "text-muted-foreground text-[11px] break-words"
+                      }
+                    >
+                      {entry.ok
+                        ? `✓ ${entry.title} — ${t("settings.covers_match")}`
+                        : `✗ ${entry.title} — ${t("settings.covers_fail")}`}
+                    </div>
+                  ))}
+                  {coverResult.entries.length > 12 && (
+                    <div className="text-[11px] text-muted-foreground italic">
+                      {t("settings.covers_and_more", {
+                        count: coverResult.entries.length - 12,
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </dl>
+          )}
         </section>
 
         {SUPPORT_ENABLED && (
@@ -403,7 +489,7 @@ const Settings = () => {
             </button>
             <button
               type="button"
-              onClick={() => openExternal(SUPPORT_URL)}
+              onClick={() => openExternal(QUOTE_SUPPORT_URL)}
               className="w-full text-left text-sm text-foreground py-2 px-1 rounded-lg hover:bg-glass-border/10 flex items-center justify-between"
             >
               {t("settings.support")}

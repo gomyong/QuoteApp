@@ -47,12 +47,12 @@ app.quote.note://auth/callback
 
 | ASC 필드 | URL |
 |----------|-----|
-| **Privacy Policy URL** | https://gomyong.github.io/QuoteApp/privacy.html |
-| **Support URL** | https://gomyong.github.io/QuoteApp/#contact |
-| **Marketing URL** (선택) | https://gomyong.github.io/QuoteApp/ |
+| **Privacy Policy URL** | https://quote.tealdot.dev/privacy.html |
+| **Support URL** | https://quote.tealdot.dev/#contact |
+| **Marketing URL** (선택) | https://quote.tealdot.dev/ |
 | **App Store** | ⏳ 1.0 심사 통과 · **개발자 출시 대기** — 릴리스 후 App Store URL로 CTA 교체 |
 
-랜딩: https://gomyong.github.io/QuoteApp/
+랜딩: https://quote.tealdot.dev/
 
 App Store 링크가 나오면 랜딩의 「출시 알림」 CTA를 App Store URL로 바꾸면 됩니다.
 
@@ -73,7 +73,7 @@ Sign-in: enter email → open inbox → type the numeric code from the email
 (or tap the magic link). Camera is used for OCR. Offline works without login.
 Account deletion: Settings → Delete account.
 Optional tip: Settings → 개발자 응원하기 → 후원하기 (Sandbox or live IAP).
-Support: https://gomyong.github.io/QuoteApp/#contact
+Support: https://quote.tealdot.dev/#contact
 ```
 
 5. App Store 링크가 나오면 랜딩의 `#download` / App Store 버튼을 실 URL로 교체

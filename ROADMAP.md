@@ -1,13 +1,12 @@
 # Quote — 제품 로드맵 (Product Roadmap)
 
-> 최종 업데이트: **2026-07-22**
+> 최종 업데이트: **2026-07-23**
 > 이 문서는 `WORK_LOG.md`(구현 이력), `LAUNCH_CHECKLIST.md`(출시 체크리스트),
-> `IAP_STEP1_APPSTORE_DONATION.md`(후원 IAP)를 하나로 묶어 **앞으로의 방향**을
-> 정리한 살아있는 계획 문서입니다. 완료되면 각 단계에 체크하고, 새 아이디어는
-> "장기 골" 또는 "백로그"에 추가하세요.
+> `IAP_STEP1_APPSTORE_DONATION.md`(후원 IAP), `ANDROID_STEP5.md`(Play 출시)를
+> 하나로 묶어 **앞으로의 방향**을 정리한 살아있는 계획 문서입니다.
 >
-> **지금 바로 체크하며 진행할 문서:** [`RELEASE_NOW.md`](./RELEASE_NOW.md)
-> (1.0.1 심사 제출 · 출시 후 운영)
+> **도메인:** 사업 메인 = **tealdot.dev** (틸닷) · 제품 = Quote (서비스명 ≠ 법인명 OK)
+> **지금 진행:** [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
 
 기본 원칙: **"실현 불가능/한계"를 먼저 말하지 않는다.** 각 항목마다
 *가능한 구현 경로*를 먼저 찾고, 제약은 그 경로 안에서 관리한다.
@@ -16,7 +15,7 @@
 
 ## 0. 현재 상태 (Baseline)
 
-- **플랫폼:** iOS(Capacitor) 우선 · 웹/PWA 동시 동작 · Android 코드 공유 준비됨
+- **플랫폼:** iOS(Capacitor) 운영 · **Android scaffold + ML Kit OCR** · 웹/PWA 코드 공유
 - **코어:** 온디바이스 OCR(Apple Vision / ML Kit / Tesseract 폴백) → 문장 저장
 - **동기화:** Supabase(Postgres/Auth/Storage) + 오프라인 우선(IndexedDB + outbox)
 - **표지 매칭:** locale-aware — 한글: Kakao→Naver→Google→Open Library / 라틴: Google→Open Library→…
@@ -24,8 +23,10 @@
 - **후원:** RevenueCat + StoreKit consumable 3티어 (small/medium/large **전부 Approved**)
 - **Supabase:** 0001~0005 적용 · Auth redirect · **브랜딩 이메일 템플릿** 적용
 - **App Store 1.0:** **출시 완료** (2026-07-21) — https://apps.apple.com/kr/app/id6790071377
-- **App Store 1.0.1:** **build 3 업로드 · 심사 제출 대기** (2026-07-22)
-  → 실행 체크리스트: [`RELEASE_NOW.md`](./RELEASE_NOW.md) Phase F
+- **App Store 1.0.1:** **출시·운영 중** (2026-07-23)
+- **Android / Play:** Step 5 진행 중 — 체크리스트 [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
+- **도메인:** `tealdot.dev` · Quote 공개 URL **`quote.tealdot.dev`** — [`TEALDOT_DOMAIN.md`](./TEALDOT_DOMAIN.md)
+  → 실행 체크리스트: [`RELEASE_NOW.md`](./RELEASE_NOW.md) (iOS 운영) · [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
 
 ---
 
@@ -34,11 +35,11 @@
 | 구간 | 단계 | 목표 | 예상 규모 |
 | --- | --- | --- | --- |
 | **출시** | Step 0 | 1.0 릴리스 + 운영 안정화 | ✅ 완료 |
-| **단기** | Step 1 | 1.0.1 (리뷰 피드백 + IAP 연동) | ⏳ 심사 대기 |
-| **단기** | Step 2 ⭐ | 외국어(EN/US·CA) 표지 API 개선 | 🔄 1.0.1에 핵심 반영 · hit rate 측정 남음 |
-| **중기** | Step 3 | 인증·딥링크 UX | 2~3일 |
-| **중기** | Step 4 | PWA/웹 마감 | 0.5~1일 |
-| **중기** | Step 5 | Android 출시 | 1~2주 |
+| **단기** | Step 1 | 1.0.1 (리뷰 피드백 + IAP 연동) | ✅ 운영 중 |
+| **단기** | Step 2 ⭐ | 외국어(EN/US·CA) 표지 API 개선 | 🔄 hit rate 측정 남음 |
+| **중기** | Step 5 ⭐ | **Android 출시** | 🔄 진행 중 |
+| **중기** | Step 3 | 인증·딥링크 UX (+ tealdot.dev) | 2~3일 |
+| **중기** | Step 4 | PWA/웹 마감 | **1.1+ / 2.0으로 이연** |
 | **장기 골** | Goal A | 일본어 정식 대응 | — |
 | **장기 골** | Goal B | 유럽어(독/프/스/덴마크/핀란드…) 순차 대응 | — |
 | **장기 골** | Goal C | 웹 연동 — 저장 문장 웹에서 확인 | — |
@@ -62,7 +63,7 @@
 
 ---
 
-## Step 1 — 1.0.1 ⏳ (심사 제출 대기)
+## Step 1 — 1.0.1 ✅ (운영 중)
 
 **목표:** 초기 사용자 리뷰 피드백 + 표지/IAP 개선.
 
@@ -70,8 +71,7 @@
 - [x] 홈 최근 기록 10개
 - [x] IAP: RevenueCat `appUserID` ↔ Supabase user 연동
 - [x] Archive + upload **1.0.1 (build 3)**
-- [ ] Connect → 1.0.1 버전 → 빌드 3 → **심사 제출**
-- [ ] 승인 후 릴리스
+- [x] Connect → 심사 → 릴리스 · **운영 중** (2026-07-23)
 - [ ] (후순위) `0003` → `VALIDATE CONSTRAINT`
 
 ---
@@ -127,22 +127,28 @@ Settings 진단에 provider별 결과 표시.
 
 ---
 
-## Step 4 — PWA / 웹 마감 (0.5~1일)
+## Step 4 — PWA / 웹 마감 (**1.1+ / 2.0으로 이연**)
 
-- [ ] `public/icons/` PNG 4종 추가 (`public/icons/README.md`)
-- [ ] `manifest.webmanifest` 아이콘 실파일 연결
+- [x] `public/icons/` PNG 준비됨 (로컬) — 스토어 릴리스 번들과 별도로 1.1+에 포함
+- [ ] `manifest.webmanifest` 최종 점검 + 웹 배포
 - [ ] 웹 표지 API 정리 (Naver CORS 한계 → 서버리스 proxy 또는 Google/Open Library only)
+- [ ] tealdot.dev 하위 Quote 웹 origin 연결
 
 ---
 
-## Step 5 — Android 출시 (1~2주)
+## Step 5 — Android 출시 🔄 (진행 중 · 1.1.0)
 
 **목표:** iOS에서 검증된 기능을 Play Store로 확장.
+**실행 문서:** [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
 
-- [ ] `npm run android:add` → ML Kit OCR 어댑터 검증
-- [ ] 카메라/저장 권한, 서명 keystore, Play Console 메타데이터
-- [ ] 후원 IAP: Play Billing + RevenueCat Android
+- [x] `npm run android:add` → `android/` scaffold
+- [x] ML Kit OCR 어댑터 (Latin + Korean) + JS 라우팅
+- [x] 카메라/저장 권한 · auth deep link intent
+- [x] RevenueCat Android API key 코드 경로
+- [ ] keystore · AAB · Play Console 내부 테스트
+- [ ] Play Billing 상품 + RevenueCat Android 앱 연동 · `.env.local` 키
 - [ ] 내부 테스트 → 공개 테스트 → 출시
+- [x] tealdot.dev 코드·문서 URL 통일 (`quote.tealdot.dev`) — DNS/GitHub Pages는 [`TEALDOT_DOMAIN.md`](./TEALDOT_DOMAIN.md)
 
 ---
 
@@ -268,16 +274,12 @@ UI 번역을 넘어 **OCR·표지·문장 품질**까지 일본어 기준을 맞
 
 | 기간 | 마일스톤 |
 | --- | --- |
-| **7월 말** | Step 0 완료 — 1.0 릴리스, Sandbox 후원 검증, Supabase/문서 정리 |
-| **8월** | Step 1 (1.0.1) + Step 2 (외국어 표지: Open Library + locale routing) 배포 |
-| **8월 말 ~ 9월 초** | Step 3 (딥링크) + Step 4 (PWA 마감) |
-| **9월** | **Goal C** — 웹 열람 1단계(읽기 전용) 공개 → 데스크톱 레이아웃 |
-| **9~10월** | Step 5 — Android 내부 테스트 → Play Store 출시 |
-| **10월** | **Goal A** — 일본어 정식 대응 (OCR ja-JP, openBD, 문장분할) |
-| **10~11월** | **Goal B** — 유럽어 순차 (독일어·프랑스어 먼저, 스페인어·덴마크어·핀란드어 이어서) |
-| **11월** | **Goal E** — 일반 메모 + 이미지/영상 저장 (모델 확장 + Storage) |
-| **11~12월** | **Goal D** ★ — Phase D0(Vision Pro/Quest 웹) → D1 공간 UI → D2 패스스루 OCR 착수 |
-| **12월 말** | 연간 목표 최종 점검 — 전 골 체크리스트 완료 확인 |
+| **7월 말** | Step 0 완료 — 1.0 릴리스 |
+| **8월 초** | Step 1 (1.0.1) ✅ 운영 · **Step 5 Android** 착수 |
+| **8월** | Android 내부 테스트 → Play 출시 · tealdot.dev DNS/랜딩 이전 |
+| **8월 말 ~ 9월** | Step 3 (딥링크 + tealdot.dev) · Step 2 hit-rate 튜닝 |
+| **1.1+ / 2.0** | Step 4 PWA · Goal C 웹 열람 |
+| **9~10월** | Goal A 일본어 … (이하 기존 계획) |
 
 > 병행 팁: Goal B(유럽어)는 언어당 반복 작업이므로 다른 골 진행 중에도
 > 한 언어씩 끼워 넣을 수 있다. Goal D Phase D0은 Goal C 웹 뷰가 나오는
@@ -286,19 +288,15 @@ UI 번역을 넘어 **OCR·표지·문장 품질**까지 일본어 기준을 맞
 ## 추천 순서 (의존성 기준)
 
 ```
-[출시]  Step 0
+[출시]  Step 0 → Step 1 (1.0.1) ✅
           │
-[단기]  Step 2 (외국어 표지) ── Step 1 (핫픽스, 병행)
+[지금]  Step 5 (Android / Play) ⭐  +  tealdot.dev 이전 (병행)
           │
-[중기]  Step 3 (딥링크) → Step 4 (PWA/웹) → Goal C (웹 열람)
+[다음]  Step 3 (딥링크) → Step 2 튜닝
           │
-        Step 5 (Android)
+[이연]  Step 4 (PWA) / Goal C (웹) → 1.1+ / 2.0
           │
-[장기]  Goal A (일본어) → Goal B (유럽어 순차)
-          │
-        Goal E (메모/미디어)
-          │
-[최종]  Goal D (AR 글래스) ★
+[장기]  Goal A → B → E → Goal D ★
 ```
 
 - **Goal C(웹 열람)** 는 Step 4(PWA 마감) 위에 올리면 비용이 가장 낮다.

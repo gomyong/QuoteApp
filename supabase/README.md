@@ -36,7 +36,7 @@ In **Authentication → URL Configuration**:
 
 | Field | Value |
 | ----- | ----- |
-| Site URL | Your web origin (or `http://localhost:8080` for local web) |
+| Site URL | **`https://quote.tealdot.dev`** (prod) or `http://localhost:8080` (local web) |
 | Additional Redirect URLs | **`app.quote.note://auth/callback`** (required for native magic-link return) |
 
 Also add any web origins you use (e.g. `http://localhost:8080/#/`).
@@ -71,11 +71,17 @@ body and set the **Subject** exactly as above → **Save**.
 #### Sender address (the real anti-spam fix)
 
 The default sender is `noreply@mail.app.supabase.io`, which many inboxes flag.
-To send as your own domain (e.g. `noreply@quote.app`) configure **custom SMTP**:
+To send as your own domain configure **custom SMTP**:
 
 **Authentication → Emails → SMTP Settings** → enable and point at a provider
-(Resend / SendGrid / Postmark / SES). Set **Sender name** to `Quote`. This also
-lifts the default ~3–4 emails/hour cap that will otherwise throttle real users.
+(Resend / SendGrid / Postmark / SES). Recommended:
+
+| Field | Value |
+| --- | --- |
+| Sender email | `noreply@tealdot.dev` |
+| Sender name | `Quote` |
+
+See [`TEALDOT_DOMAIN.md`](../TEALDOT_DOMAIN.md) for DNS (SPF/DKIM) and dashboard URLs.
 
 ## Storage
 
@@ -105,7 +111,7 @@ once before opening signups to the public.
    - Magic link: 4 / hour per IP (default is fine for solo, raise gradually)
    - Sign-ups: 30 / hour per IP
 3. **Authentication → URL Configuration**
-   - Site URL = production web origin (or localhost for now)
+   - Site URL = **`https://quote.tealdot.dev`** (or localhost for dev)
    - Additional Redirect URLs include **`app.quote.note://auth/callback`**
 4. **Project Settings → API → JWT Settings**
    - JWT expiry: 3600s (1h) is fine; refresh handles the rest.

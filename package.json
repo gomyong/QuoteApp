@@ -16,7 +16,8 @@
     "ios:patch": "node scripts/patch-ios-info-plist.mjs",
     "ios:add": "cap add ios && npm run ios:patch",
     "ios": "vite build && cap sync ios && cap open ios",
-    "android:add": "cap add android",
+    "android:add": "cap add android && npm run android:patch",
+    "android:patch": "node scripts/patch-android-manifest.mjs",
     "android": "vite build && cap sync android && cap open android"
   },
   "dependencies": {

@@ -123,7 +123,7 @@ export type CoverRetryEntry = {
   bookId: string;
   title: string;
   author: string | null;
-  /** True = Google Books returned a confident match, cover written. */
+  /** True = a provider returned a confident match and the cover was written. */
   ok: boolean;
 };
 

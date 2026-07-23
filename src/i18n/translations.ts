@@ -192,11 +192,11 @@ const ko: Dict = {
   "settings.covers_retry": "표지 다시 찾기",
   "settings.covers_searching": "찾는 중...",
   "settings.covers_desc":
-    "표지가 없는 책은 카카오 → 네이버 → 구글 순으로 찾습니다. 카카오·네이버는 키가 있을 때만 먼저 쓰이고, 없으면 구글만 사용합니다. 키는 `.env.local`에 넣은 뒤 앱을 다시 빌드해야 반영됩니다. 인터넷이 필요합니다.",
+    "표지가 없는 책은 제목 언어에 따라 카카오 → 네이버 → Open Library → 구글 순으로 찾습니다. 카카오·네이버는 키가 있을 때만 먼저 쓰이고, 없으면 Open Library·구글을 사용합니다. 키는 `.env.local`에 넣은 뒤 앱을 다시 빌드해야 반영됩니다. 인터넷이 필요합니다.",
   "settings.covers_on": "사용",
   "settings.covers_off": "미사용",
   "settings.covers_providers_status":
-    "도서 API: 카카오 {kakao}, 네이버 {naver}, 구글 {google}",
+    "도서 API: 카카오 {kakao}, 네이버 {naver}, Open Library {openLibrary}, 구글 {google}",
   "settings.covers_total": "총 책",
   "settings.covers_already": "이미 표지 있음",
   "settings.covers_tried": "시도",
@@ -209,9 +209,9 @@ const ko: Dict = {
 
   // --- privacy (in-app)
   "privacy.title": "개인정보 처리방침",
-  "privacy.updated": "최종 업데이트: 2026-07-12",
+  "privacy.updated": "최종 업데이트: 2026-07-23",
   "privacy.intro":
-    "Quote는 책의 문장을 기록·보관하는 앱입니다. 아래는 수집·이용·삭제에 관한 안내입니다.",
+    "Quote는 책의 문장을 기록·보관하는 앱입니다. Quote는 Tealdot(tealdot.dev)이 운영합니다.",
   "privacy.s1_title": "1. 수집하는 정보",
   "privacy.s1_email": "이메일 — 로그인(매직 링크 / 인증 코드) 시",
   "privacy.s1_content": "문장, 메모, 책 제목·저자 등 사용자가 저장한 콘텐츠",
@@ -439,11 +439,11 @@ const en: Dict = {
   "settings.covers_retry": "Retry covers",
   "settings.covers_searching": "Searching...",
   "settings.covers_desc":
-    "Missing covers are resolved in order: Kakao → Naver → Google. Kakao/Naver run only when API keys are set in `.env.local`; otherwise Google is used. Rebuild the app after changing env. Internet required.",
+    "Missing covers are resolved by title language: Kakao → Naver → Open Library → Google. Kakao/Naver run only when API keys are set in `.env.local`; otherwise Open Library and Google are used. Rebuild the app after changing env. Internet required.",
   "settings.covers_on": "On",
   "settings.covers_off": "Off",
   "settings.covers_providers_status":
-    "Book APIs: Kakao {kakao}, Naver {naver}, Google {google}",
+    "Book APIs: Kakao {kakao}, Naver {naver}, Open Library {openLibrary}, Google {google}",
   "settings.covers_total": "Total books",
   "settings.covers_already": "Already have covers",
   "settings.covers_tried": "Tried",
@@ -455,9 +455,9 @@ const en: Dict = {
   "settings.covers_and_more": "...and {count} more",
 
   "privacy.title": "Privacy Policy",
-  "privacy.updated": "Last updated: 2026-07-12",
+  "privacy.updated": "Last updated: 2026-07-23",
   "privacy.intro":
-    "Quote helps you capture lines from books. This page explains what we collect and how you can delete it.",
+    "Quote helps you capture lines from books. Quote is operated by Tealdot (tealdot.dev).",
   "privacy.s1_title": "1. Information we collect",
   "privacy.s1_email": "Email — when you sign in (magic link / verification code)",
   "privacy.s1_content": "Quotes, notes, book titles/authors, and related content you save",
@@ -681,11 +681,11 @@ const ja: Dict = {
   "settings.covers_retry": "カバーを再取得",
   "settings.covers_searching": "検索中...",
   "settings.covers_desc":
-    "カバーがない本は Kakao → Naver → Google の順で探します。Kakao/Naver は `.env.local` にキーがあるときだけ先に使われ、なければ Google のみです。キー変更後はアプリを再ビルドしてください。インターネットが必要です。",
+    "カバーがない本はタイトル言語に応じて Kakao → Naver → Open Library → Google の順で探します。Kakao/Naver は `.env.local` にキーがあるときだけ先に使われ、なければ Open Library・Google を使います。キー変更後はアプリを再ビルドしてください。インターネットが必要です。",
   "settings.covers_on": "利用",
   "settings.covers_off": "未設定",
   "settings.covers_providers_status":
-    "書籍API: Kakao {kakao}, Naver {naver}, Google {google}",
+    "書籍API: Kakao {kakao}, Naver {naver}, Open Library {openLibrary}, Google {google}",
   "settings.covers_total": "本の合計",
   "settings.covers_already": "カバーあり",
   "settings.covers_tried": "試行",
@@ -697,9 +697,9 @@ const ja: Dict = {
   "settings.covers_and_more": "...他 {count}件",
 
   "privacy.title": "プライバシーポリシー",
-  "privacy.updated": "最終更新: 2026-07-12",
+  "privacy.updated": "最終更新: 2026-07-23",
   "privacy.intro":
-    "Quote は本の一文を記録・保管するアプリです。収集・利用・削除について説明します。",
+    "Quote は本の一文を記録・保管するアプリです。Quote は Tealdot (tealdot.dev) が運営しています。",
   "privacy.s1_title": "1. 収集する情報",
   "privacy.s1_email": "メール — ログイン時（マジックリンク / 認証コード）",
   "privacy.s1_content": "引用、メモ、書名・著者など保存したコンテンツ",

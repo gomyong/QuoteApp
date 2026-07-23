@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { QUOTE_SUPPORT_URL } from "@/config/publicUrls";
 
 /**
  * In-app privacy policy (Apple 5.1.1 + App Store Connect URL companion).
@@ -75,7 +76,7 @@ const Privacy = () => {
           <p className="text-sm">
             <a
               className="text-accent underline"
-              href="https://gomyong.github.io/QuoteApp/#contact"
+              href={QUOTE_SUPPORT_URL}
               target="_blank"
               rel="noreferrer"
             >

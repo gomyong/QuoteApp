@@ -4,27 +4,28 @@ import { Capacitor } from "@capacitor/core";
  * Developer support (voluntary tip) configuration.
  *
  * The app is free. Users can optionally leave a one-time "tip" to support
- * development. On iOS this MUST go through In-App Purchase (Apple Guideline
- * 3.1.1) — we use RevenueCat + StoreKit **consumables**. There are no external
- * payment links anywhere in the app.
+ * development. On iOS/Android this MUST go through store IAP (Apple 3.1.1 /
+ * Google Play Billing) — we use RevenueCat + consumables. There are no
+ * external payment links anywhere in the app.
  *
  * Runtime behavior of the "개발자 응원하기" card in Settings:
- *   - Native iOS + RevenueCat key present → live tip sheet (real IAP)
- *   - VITE_IAP_PREVIEW=true                  → mock UI for ASC screenshots
- *   - Otherwise on web/dev                   → quiet "준비 중"
+ *   - Native + matching RevenueCat key → live tip sheet
+ *   - VITE_IAP_PREVIEW=true            → mock UI for store screenshots
+ *   - Otherwise on web/dev             → quiet "준비 중"
  *
  * Keys come from env (see .env.example):
- *   VITE_REVENUECAT_IOS_API_KEY   RevenueCat public iOS SDK key (not a secret)
- *   VITE_IAP_TIP_PRODUCT_IDS      comma-separated consumable product IDs
- *   VITE_IAP_PREVIEW                "true" = mock tip UI (see tipPreview.ts)
+ *   VITE_REVENUECAT_IOS_API_KEY       public iOS SDK key
+ *   VITE_REVENUECAT_ANDROID_API_KEY   public Android SDK key (goog_…)
+ *   VITE_IAP_TIP_PRODUCT_IDS          comma-separated consumable product IDs
+ *   VITE_IAP_PREVIEW                  "true" = mock tip UI
  */
 
 /** Master switch to show/hide the support card entirely. */
 export const SUPPORT_ENABLED = true;
 
 /**
- * Mock tip UI for App Store Connect IAP review screenshots.
- * Edit copy in `src/config/tipPreview.ts`. Turn off before App Store release.
+ * Mock tip UI for store Connect / Play Console IAP review screenshots.
+ * Edit copy in `src/config/tipPreview.ts`. Turn off before release builds.
  */
 export const isIapPreviewMode = (): boolean =>
   import.meta.env.VITE_IAP_PREVIEW === "true";
@@ -33,6 +34,19 @@ export const isIapPreviewMode = (): boolean =>
 export const REVENUECAT_IOS_API_KEY = (
   (import.meta.env.VITE_REVENUECAT_IOS_API_KEY as string | undefined) ?? ""
 ).trim();
+
+/** RevenueCat public Android SDK key (safe to ship in the client). */
+export const REVENUECAT_ANDROID_API_KEY = (
+  (import.meta.env.VITE_REVENUECAT_ANDROID_API_KEY as string | undefined) ?? ""
+).trim();
+
+/** Platform-appropriate public SDK key, or "" when unavailable. */
+export const revenueCatApiKey = (): string => {
+  const platform = Capacitor.getPlatform();
+  if (platform === "ios") return REVENUECAT_IOS_API_KEY;
+  if (platform === "android") return REVENUECAT_ANDROID_API_KEY;
+  return "";
+};
 
 const DEFAULT_TIP_PRODUCT_IDS = [
   "app.quote.note.tip.small",
@@ -65,7 +79,7 @@ const ENV_TIP_PRODUCT_IDS: string[] = (
 export const tipProductIds = (): string[] =>
   ENV_TIP_PRODUCT_IDS.length > 0 ? ENV_TIP_PRODUCT_IDS : DEFAULT_TIP_PRODUCT_IDS;
 
-export const isTipsConfigured = (): boolean => REVENUECAT_IOS_API_KEY.length > 0;
+export const isTipsConfigured = (): boolean => revenueCatApiKey().length > 0;
 
 /** Settings card shows an active "후원하기" button. */
 export const isTipSheetEnabled = (): boolean =>
