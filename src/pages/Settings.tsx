@@ -371,17 +371,21 @@ const Settings = () => {
             </button>
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-            {t("settings.covers_desc")}
-          </p>
-          <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
-            {t("settings.covers_providers_status", {
-              kakao: providerOnOff("kakao"),
-              naver: providerOnOff("naver"),
-              openLibrary: providerOnOff("openLibrary"),
-              google: providerOnOff("google"),
-            })}
-          </p>
+          {import.meta.env.DEV && (
+            <>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                {t("settings.covers_desc")}
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                {t("settings.covers_providers_status", {
+                  kakao: providerOnOff("kakao"),
+                  naver: providerOnOff("naver"),
+                  openLibrary: providerOnOff("openLibrary"),
+                  google: providerOnOff("google"),
+                })}
+              </p>
+            </>
+          )}
 
           {coverResult && (
             <dl className="text-xs text-muted-foreground space-y-1.5 pt-2 mt-2 border-t border-glass-border/20">
