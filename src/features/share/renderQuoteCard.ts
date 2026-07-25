@@ -46,6 +46,12 @@ export type RenderInput = {
   lang: Language;
   /** Target output size. */
   size: ShareSize;
+  /**
+   * Free tier: always watermarked. Quote Pro may pass `false` to omit
+   * the wordmark. Defaults to `true` so callers cannot accidentally
+   * ship an unmarked image.
+   */
+  showWatermark?: boolean;
 };
 
 /**
@@ -451,7 +457,8 @@ export const renderQuoteCard = async (
   // body size — once a font family/weight is decoded, reuse at any
   // size is effectively free, so this covers both base and shrunk
   // variants we might try below.
-  const logoPromise = loadLogoOnce();
+  const showWatermark = input.showWatermark !== false;
+  const logoPromise = showWatermark ? loadLogoOnce() : Promise.resolve(null);
   const warmupSize = Math.round((input.size.width / 1080) * BODY_SIZE_BASE_AT_1080);
   await ensureFontsReady(input.lang, warmupSize, body, subtitle);
 

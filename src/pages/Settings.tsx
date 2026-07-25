@@ -4,12 +4,15 @@ import {
   AlertCircle,
   BookMarked,
   CheckCircle2,
+  Crown,
   ExternalLink,
+  FileDown,
   FileText,
   Globe,
   Heart,
   Image as ImageIcon,
   Loader2,
+  Lock,
   LogIn,
   LogOut,
   RefreshCw,
@@ -30,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { usePro } from "@/features/iap/ProProvider";
 import { repo } from "@/sync/repo";
 import {
   retryMissingCovers,
@@ -46,8 +50,11 @@ import {
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { LANGUAGES, type Language } from "@/i18n/config";
 import { SUPPORT_ENABLED, isIapPreviewMode, isTipSheetEnabled } from "@/config/support";
+import { PRO_ENABLED, isProSheetEnabled } from "@/config/pro";
 import { TIP_PREVIEW_SETTINGS } from "@/config/tipPreview";
 import TipSheet from "@/components/TipSheet";
+import ProSheet from "@/components/ProSheet";
+import ArchiveExportSheet from "@/components/ArchiveExportSheet";
 
 import {
   QUOTE_SUPPORT_URL,
@@ -89,6 +96,9 @@ const Settings = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
+  const [proOpen, setProOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const { isPro, loading: proLoading } = usePro();
   const formatRelative = useRelativeTime();
 
   const providers = useMemo(() => enabledProviders(), []);
@@ -100,7 +110,12 @@ const Settings = () => {
 
   useEffect(() => {
     if (searchParams.get("openTip") === "1") setTipOpen(true);
-  }, [searchParams]);
+    if (searchParams.get("openPro") === "1") setProOpen(true);
+    if (searchParams.get("openArchive") === "1") {
+      if (isPro) setArchiveOpen(true);
+      else setProOpen(true);
+    }
+  }, [searchParams, isPro]);
 
   useEffect(() => {
     (async () => {
@@ -225,6 +240,89 @@ const Settings = () => {
             })}
           </div>
         </section>
+
+        {PRO_ENABLED && (
+          <section className="glass rounded-2xl p-4 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <Crown size={16} className="text-accent flex-none" />
+                <div className="min-w-0">
+                  <div className="text-sm text-foreground flex items-center gap-2">
+                    {t("settings.pro")}
+                    {!proLoading && isPro && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium">
+                        {t("pro.badge_active")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {isPro
+                      ? t("settings.pro_desc_active")
+                      : t("settings.pro_desc")}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ul className="mt-3 mb-3 space-y-2">
+              {(
+                [
+                  "settings.pro_row_watermark",
+                  "settings.pro_row_archive",
+                ] as const
+              ).map((key) => (
+                <li
+                  key={key}
+                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                >
+                  {isPro ? (
+                    <CheckCircle2 size={12} className="text-accent flex-none" />
+                  ) : (
+                    <Lock size={12} className="text-muted-foreground flex-none" />
+                  )}
+                  <span className={isPro ? "text-foreground" : undefined}>
+                    {t(key)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {isPro ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setArchiveOpen(true)}
+                  className="w-full text-sm py-2.5 rounded-xl bg-accent text-accent-foreground inline-flex items-center justify-center gap-1.5"
+                >
+                  <FileDown size={14} />
+                  {t("settings.pro_archive_cta")}
+                </button>
+                {isProSheetEnabled() && (
+                  <button
+                    type="button"
+                    onClick={() => setProOpen(true)}
+                    className="w-full text-xs py-2 text-muted-foreground hover:text-foreground"
+                  >
+                    {t("settings.pro_manage")}
+                  </button>
+                )}
+              </div>
+            ) : isProSheetEnabled() ? (
+              <button
+                type="button"
+                onClick={() => setProOpen(true)}
+                className="w-full text-sm py-2.5 rounded-xl bg-accent text-accent-foreground inline-flex items-center justify-center gap-1.5"
+              >
+                <Crown size={14} />
+                {t("settings.pro_cta")}
+              </button>
+            ) : (
+              <div className="w-full text-sm py-2.5 rounded-xl bg-glass-border/10 text-muted-foreground inline-flex items-center justify-center gap-1.5">
+                {t("settings.pro_soon")}
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between">
@@ -456,7 +554,12 @@ const Settings = () => {
               </span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              {preview ? TIP_PREVIEW_SETTINGS.description : t("settings.support_dev_desc")}
+              {preview
+                ? TIP_PREVIEW_SETTINGS.description
+                : t("settings.support_dev_desc")}
+            </p>
+            <p className="text-[11px] text-muted-foreground/80 mb-3">
+              {t("settings.support_dev_not_pro")}
             </p>
             {isTipSheetEnabled() ? (
               <button
@@ -476,6 +579,12 @@ const Settings = () => {
         )}
 
         <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} />
+        <ProSheet open={proOpen} onClose={() => setProOpen(false)} />
+        <ArchiveExportSheet
+          open={archiveOpen}
+          onClose={() => setArchiveOpen(false)}
+          onNeedPro={() => setProOpen(true)}
+        />
 
         <section className="glass rounded-2xl p-4 mt-4">
           <div className="flex items-center gap-3 mb-3">

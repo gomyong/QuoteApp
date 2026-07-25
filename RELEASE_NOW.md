@@ -16,6 +16,7 @@ Phase A~B  1.0 출시                         ✅ (2026-07-21)
 Phase F    1.0.1 심사 → 릴리스              ✅ (2026-07-23)
 Phase G    Tealdot 도메인 (quote.tealdot.dev) ✅ (2026-07-23)
 Phase H    Android scaffold (Step 5)         🔄 코드 완료 · Play 미제출
+Phase J    Quote Pro (구독 1차)              🔄 코드 착수 · 스토어 상품 대기
 Phase C    출시 후 모니터링                  🔄
 Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 ```
@@ -118,13 +119,28 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 ### 다음 (Play 출시 전) ⏳
 
-- [ ] Android Studio → **실기기 Run ▶** (OCR `MlKit` 로그 확인)
-- [ ] upload keystore 생성 · Signed AAB
-- [ ] Play Console 앱 생성 · 내부 테스트
+- [x] Android Studio → **실기기 Run ▶** (OCR / 로그인 스모크)
+- [x] upload keystore · Signed AAB
+- [ ] Play Console **조직 계정** (D-U-N-S) · 앱 생성 · 내부 테스트
 - [ ] Play Billing 상품 + RevenueCat Android 연동
 - [ ] Play privacy/support URL → quote.tealdot.dev
 
 **첫 Play 버전:** `1.1.0` (versionCode 1) — iOS 1.0.1과 별도 트랙
+
+---
+
+# Phase J — Quote Pro (구독 1차) 🔄
+
+> 스펙: [`PRO_SUBSCRIPTION.md`](./PRO_SUBSCRIPTION.md)
+
+**유료 전용:** 워터마크 제거 · Markdown 내보내기 · Obsidian URI · Notion 내보내기  
+**무료 유지:** 기록 · OCR · 동기화 · 워터마크 포함 이미지 공유 · 후원(tip)
+
+- [x] Pro entitlement 게이팅 · Settings / Share UX
+- [x] Markdown / Obsidian / Notion export 코드
+- [ ] ASC / Play 구독 상품 `app.quote.note.pro.monthly` (₩3,300)
+- [ ] RevenueCat entitlement `pro` + Offering
+- [ ] `VITE_PRO_PREVIEW` 끄고 TestFlight / 내부테스트 QA
 
 ---
 
@@ -164,7 +180,7 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 ## 다음 추천 순서
 
-1. **Android 실기기** — `npm run android` → Run ▶ → OCR/로그인 스모크
-2. **Play Console** — 앱 생성 → 내부 테스트 AAB
+1. **Play Console 조직 계정** — D-U-N-S → AAB 내부 테스트
+2. **Quote Pro** — 스토어 구독 상품 + RC `pro` → Preview 끄고 QA
 3. **Phase C** — iOS 1.0.1 리뷰·크래시 모니터링
 4. (여유 시) **SMTP** · EN 표지 hit rate

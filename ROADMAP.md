@@ -2,7 +2,8 @@
 
 > 최종 업데이트: **2026-07-23**
 > 이 문서는 `WORK_LOG.md`(구현 이력), `LAUNCH_CHECKLIST.md`(출시 체크리스트),
-> `IAP_STEP1_APPSTORE_DONATION.md`(후원 IAP), `ANDROID_STEP5.md`(Play 출시)를
+> `IAP_STEP1_APPSTORE_DONATION.md`(후원 IAP), `PRO_SUBSCRIPTION.md`(Quote Pro),
+> `ANDROID_STEP5.md`(Play 출시)를
 > 하나로 묶어 **앞으로의 방향**을 정리한 살아있는 계획 문서입니다.
 >
 > **도메인:** 사업 메인 = **tealdot.dev** (틸닷) · 제품 = Quote (서비스명 ≠ 법인명 OK)
@@ -145,10 +146,23 @@ Settings 진단에 provider별 결과 표시.
 - [x] ML Kit OCR 어댑터 (Latin + Korean) + JS 라우팅
 - [x] 카메라/저장 권한 · auth deep link intent
 - [x] RevenueCat Android API key 코드 경로
-- [ ] keystore · AAB · Play Console 내부 테스트
+- [x] keystore · Signed AAB (로컬)
+- [ ] Play Console 조직 계정(D-U-N-S) · 내부 테스트
 - [ ] Play Billing 상품 + RevenueCat Android 앱 연동 · `.env.local` 키
 - [ ] 내부 테스트 → 공개 테스트 → 출시
 - [x] tealdot.dev 코드·문서 URL 통일 (`quote.tealdot.dev`) — DNS/GitHub Pages는 [`TEALDOT_DOMAIN.md`](./TEALDOT_DOMAIN.md)
+
+---
+
+## Step 5b — Quote Pro (구독 1차) 🔄
+
+**목표:** 월 ₩3,300 구독으로 워터마크 제거 + 외부 아카이브(MD / Obsidian / Notion).  
+**실행 문서:** [`PRO_SUBSCRIPTION.md`](./PRO_SUBSCRIPTION.md)
+
+- [x] Entitlement 게이팅 · Settings / Share UX (무료와 명확 분리)
+- [x] Markdown · Obsidian URI · Notion export
+- [ ] ASC / Play 구독 상품 + RevenueCat `pro`
+- [ ] Preview 끄고 실결제 QA
 
 ---
 

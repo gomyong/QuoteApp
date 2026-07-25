@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ProProvider } from "@/features/iap/ProProvider";
 import DeepLinkHandler from "@/features/auth/DeepLinkHandler";
 import SyncMount from "@/components/SyncMount";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
@@ -25,20 +26,22 @@ const App = () => (
       <Sonner />
       <LanguageProvider>
         <AuthProvider>
-          <DeepLinkHandler />
-          <SyncMount />
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/capture" element={<Capture />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/book/:bookId" element={<BookDetail />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </HashRouter>
+          <ProProvider>
+            <DeepLinkHandler />
+            <SyncMount />
+            <HashRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/capture" element={<Capture />} />
+                <Route path="/library" element={<Library />} />
+                <Route path="/book/:bookId" element={<BookDetail />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </HashRouter>
+          </ProProvider>
         </AuthProvider>
       </LanguageProvider>
     </TooltipProvider>

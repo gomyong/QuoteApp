@@ -19,6 +19,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
+  Crown,
   Image as ImageIcon,
   Info,
   Loader2,
@@ -35,6 +36,8 @@ import {
 import { sharePng } from "@/features/share/shareImage";
 import { splitForShare } from "@/features/share/splitForShare";
 import SentenceSelector from "@/components/SentenceSelector";
+import { usePro } from "@/features/iap/ProProvider";
+import ProSheet from "@/components/ProSheet";
 
 type Props = {
   open: boolean;
@@ -46,10 +49,14 @@ type Props = {
 
 const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) => {
   const { t, lang } = useTranslation();
+  const { isPro } = usePro();
   const [selectedSize, setSelectedSize] = useState<ShareSize>(SHARE_SIZES[0]);
   const [image, setImage] = useState<RenderedImage | null>(null);
   const [rendering, setRendering] = useState(false);
   const [sharing, setSharing] = useState(false);
+  /** Pro-only: omit watermark. Ignored when !isPro. */
+  const [removeWatermark, setRemoveWatermark] = useState(true);
+  const [proOpen, setProOpen] = useState(false);
   // Token guards against a slow render resolving after the sheet closes
   // (or a newer render has been requested) and clobbering fresh state.
   const renderToken = useRef(0);
@@ -109,6 +116,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     const token = ++renderToken.current;
     setRendering(true);
     setImage(null);
+    const showWatermark = !(isPro && removeWatermark);
     (async () => {
       try {
         const r = await renderQuoteCard({
@@ -117,6 +125,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
           author,
           lang,
           size: selectedSize,
+          showWatermark,
         });
         if (renderToken.current !== token) return;
         setImage(r);
@@ -126,7 +135,16 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
         if (renderToken.current === token) setRendering(false);
       }
     })();
-  }, [open, effectiveContent, bookTitle, author, lang, selectedSize]);
+  }, [
+    open,
+    effectiveContent,
+    bookTitle,
+    author,
+    lang,
+    selectedSize,
+    isPro,
+    removeWatermark,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -287,6 +305,48 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                 </div>
               )}
 
+              {/* Watermark / Pro gate */}
+              <div className="mb-4">
+                {isPro ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={removeWatermark}
+                    onClick={() => setRemoveWatermark((v) => !v)}
+                    className="w-full flex items-center justify-between rounded-xl bg-glass-border/10 px-3 py-2.5"
+                  >
+                    <span className="text-xs text-foreground">
+                      {t("share.watermark_off_pro")}
+                    </span>
+                    <span
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        removeWatermark ? "bg-accent" : "bg-glass-border/40"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                          removeWatermark ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setProOpen(true)}
+                    className="w-full flex items-center gap-2 rounded-xl border border-dashed border-accent/40 bg-accent/5 px-3 py-2.5 text-left"
+                  >
+                    <Crown size={14} className="text-accent flex-none" />
+                    <span className="text-xs text-foreground leading-snug flex-1">
+                      {t("share.watermark_upsell")}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium flex-none">
+                      Pro
+                    </span>
+                  </button>
+                )}
+              </div>
+
               {/* Preview */}
               <div className="flex items-center justify-center">
                 <div
@@ -343,7 +403,12 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
   );
 
   if (typeof document === "undefined") return null;
-  return createPortal(body, document.body);
+  return (
+    <>
+      {createPortal(body, document.body)}
+      <ProSheet open={proOpen} onClose={() => setProOpen(false)} />
+    </>
+  );
 };
 
 export default ShareQuoteSheet;
