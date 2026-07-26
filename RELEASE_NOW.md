@@ -1,11 +1,23 @@
 # Quote — 출시 · 운영 실행 체크리스트
 
-> 상태: **1.0 · 1.0.1 iOS 운영 중** · **quote.tealdot.dev 라이브** · **Android Step 5 준비 중**
+> 상태: **iOS 1.0.1 운영 중** · **quote.tealdot.dev 라이브** · **Android AAB 준비 완료(로컬)** · **Quote Pro 코드 머지(main) · 스토어 미연결**
 > App Store: https://apps.apple.com/kr/app/id6790071377
 > Quote 웹: https://quote.tealdot.dev
-> 최종 업데이트: **2026-07-23**
+> 최종 업데이트: **2026-07-25**
 >
-> 관련: `ROADMAP.md` · `TEALDOT_DOMAIN.md` · `ANDROID_STEP5.md` · `LAUNCH_CHECKLIST.md`
+> 관련: `ROADMAP.md` · `TEALDOT_DOMAIN.md` · `ANDROID_STEP5.md` · `PRO_SUBSCRIPTION.md` · `LAUNCH_CHECKLIST.md`
+
+---
+
+## 버전 정책 (중요)
+
+| 트랙 | 현재 스토어 / 목표 | 비고 |
+| --- | --- | --- |
+| **iOS** | **1.0.1** (build 3) · 운영 중 | 레포에 Pro 코드 있어도 **재제출 전까지 사용자에게 안 보임** |
+| **Android** | 미출시 | 첫 Play **`1.1.0`** (versionCode 1) |
+| **Quote Pro** | 코드만 (`main` `a17b990`) | ASC/Play 구독 + RC `pro` 연결 후 **1.1.x**로 함께 제출 예정 |
+
+**원칙:** Git push ≠ 스토어 배포. 버전 bump · Archive/AAB · Console 제출은 **의도적 릴리스 때만**.
 
 ---
 
@@ -15,10 +27,87 @@
 Phase A~B  1.0 출시                         ✅ (2026-07-21)
 Phase F    1.0.1 심사 → 릴리스              ✅ (2026-07-23)
 Phase G    Tealdot 도메인 (quote.tealdot.dev) ✅ (2026-07-23)
-Phase H    Android scaffold (Step 5)         🔄 코드 완료 · Play 미제출
-Phase J    Quote Pro (구독 1차)              🔄 코드 착수 · 스토어 상품 대기
+Phase H    Android Step 5                     🔄 AAB·실기기 ✅ · Play Console ⏳
+Phase J    Quote Pro (구독 1차)               🔄 코드 ✅ · 스토어 상품 ⏳
 Phase C    출시 후 모니터링                  🔄
-Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
+Phase I    SMTP (noreply@tealdot.dev)        ⏸ 원할 때
+Phase D/E  표지 EN / iPad                    ⏸ 후순위
+```
+
+---
+
+## 향후 업무 전체 스킴 (2026-07-25)
+
+### 우선순위 1 — Android Play 내부 테스트
+
+> 상세: [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
+
+| # | 업무 | 상태 | 산출물 |
+| --- | --- | --- | --- |
+| 1 | **D-U-N-S** 신청 (영문 사업자등록증명) | ⏳ | 9자리 번호 |
+| 2 | Play Console **조직 계정** (Tealdot) + 사업자 인증 | ⏳ | 개발자 계정 |
+| 3 | 앱 생성 · 스토어 등록정보 (KR 설명·스크린샷·아이콘) | ⏳ | Console 앱 |
+| 4 | 개인정보 `quote.tealdot.dev/privacy.html` · 지원 URL | ⏳ | 정책 URL 입력 |
+| 5 | 콘텐츠 등급 · 대상층 · **데이터 보안** 설문 | ⏳ | 출시 전 필수 |
+| 6 | **내부 테스트** — `app-release.aab` 업로드 · 테스터 추가 | ⏳ | 설치 링크 |
+| 7 | Play Billing **tip 3종** + RevenueCat Android 앱 연동 | ⏳ | `goog_…` 키 → `.env.local` |
+| 8 | 실기기: 후원 · OCR · 로그인 · 동기화 재확인 | ⏳ | license tester |
+
+**로컬 완료 (레포/맥 밖):** upload keystore `~/quote-upload.jks` · alias `quote` · Signed AAB
+
+---
+
+### 우선순위 2 — Quote Pro 스토어 연결 + 1.1 제출
+
+> 상세: [`PRO_SUBSCRIPTION.md`](./PRO_SUBSCRIPTION.md)
+
+| # | 업무 | 플랫폼 | 상태 |
+| --- | --- | --- | --- |
+| 1 | 구독 `app.quote.note.pro.monthly` (₩3,300) | iOS + Android | ⏳ |
+| 2 | RevenueCat entitlement **`pro`** + Offering | RC Dashboard | ⏳ |
+| 3 | 개인정보·데이터 안전에 **구독/결제** 명시 | Console | ⏳ |
+| 4 | `VITE_PRO_PREVIEW` / `VITE_PRO_FORCE_ACTIVE` **끄기** | 빌드 | ⏳ |
+| 5 | TestFlight(iOS) + Play 내부테스트에서 Pro QA | 실기기 | ⏳ |
+| 6 | **iOS 1.1.0** (또는 1.2.0) Archive → App Store 제출 | iOS | ⏳ |
+
+**Pro 1차 범위 (코드 ✅):** 워터마크 제거 · Markdown · Obsidian URI · Notion 내보내기  
+**무료 유지:** 기록 · OCR · 동기화 · 워터마크 포함 공유 · 후원(tip)
+
+---
+
+### 우선순위 3 — 운영 · 품질 (병행 가능)
+
+| Phase | 업무 | 상태 |
+| --- | --- | --- |
+| **C** | App Store 리뷰 · 크래시 · Supabase 문의 | 🔄 |
+| **C** | Android 내부테스트 피드백 반영 | ⏳ Play 후 |
+| **D** | EN 표지 hit rate 20~30권 (목표 85%+) | ⏸ |
+| **G** | SMTP `noreply@tealdot.dev` (Resend 등) | ⏸ |
+| **G** | `tealdot.dev` 루트 테크 블로그 | ⏸ |
+
+---
+
+### 후순위 / 이번 구간 제외
+
+| 항목 | 시기 |
+| --- | --- |
+| Obsidian/Notion → Quote **가져오기** | Pro 2차 이후 검토 |
+| PWA 설치형 · 웹 문장 열람 | 1.1+ / 2.0 |
+| Associated Domains (유니버설 링크) | Step 3 |
+| iPad 대응 결정 | Phase E |
+| AR (Goal D) | 연말 |
+
+---
+
+### 추천 타임라인 (느슨한 순서)
+
+```
+[지금~]     D-U-N-S 신청 (병행) · Play Console 조직 계정
+[Console]   내부 테스트 AAB · tip Billing · RC Android
+[Console]   Pro 구독 상품 iOS+Android · RC pro entitlement
+[릴리스]    iOS 1.1.x (Pro) TestFlight → App Store
+[릴리스]    Android 1.1.0 내부 → 공개/프로덕션
+[운영]      Phase C 모니터링 · SMTP·표지는 여유 시
 ```
 
 ---
@@ -42,22 +131,28 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 ---
 
-## 2026-07-23 — 인프라 · 다음 버전 준비 (앱 스토어 미포함)
+## 레포만 반영 · 스토어 미포함
 
-코드·문서·웹만 반영. **iOS 재제출 불필요.**
+### 2026-07-23 — 인프라 · Android scaffold
 
 | 항목 | 상태 | 비고 |
 | --- | --- | --- |
 | **quote.tealdot.dev** | ✅ HTTPS 라이브 | Vercel DNS + GitHub Pages |
 | 개인정보 / 지원 URL | ✅ | `publicUrls.ts`, `docs/privacy.html` |
-| Supabase Site URL | ✅ | `https://quote.tealdot.dev` |
-| 이메일 템플릿 (Tealdot 푸터) | ✅ | Dashboard 붙여넣기 완료 |
-| **SMTP** `noreply@tealdot.dev` | ⏸ | Resend 등 — 다음에 |
-| App Store Connect URL | ✅ | privacy / support 교체 |
-| PWA 아이콘 PNG | 📦 레포만 | **1.1+ / 2.0**에 앱 번들 포함 예정 |
-| Settings 표지 진단 UI | ✅ | API on/off + 성공/실패 요약 |
-| **Android** Capacitor | 🔄 | `android/` · ML Kit OCR · RevenueCat Android 키 경로 |
-| Play Store 제출 | ⏳ | keystore · AAB · Console — 다음 |
+| Supabase Site URL + 이메일 템플릿 | ✅ | Tealdot 푸터 |
+| App Store Connect URL | ✅ | privacy / support |
+| Settings 표지 dev 노트 숨김 (prod) | ✅ | `e0371df` |
+| Android Capacitor + ML Kit OCR | ✅ | `android/` |
+| **SMTP** | ⏸ | Phase I |
+
+### 2026-07-25 — Android 로컬 · Quote Pro
+
+| 항목 | 상태 | 비고 |
+| --- | --- | --- |
+| Android 실기기 스모크 | ✅ | OCR · 로그인 · 동기화 |
+| upload keystore + Signed AAB | ✅ | 로컬만 · git 제외 |
+| **Quote Pro** (게이팅·내보내기·UX) | ✅ | `a17b990` · Preview env로 QA |
+| Play Console / Pro 구독 상품 | ⏳ | Console 작업 대기 |
 
 ---
 
@@ -109,23 +204,29 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 > 체크리스트: [`ANDROID_STEP5.md`](./ANDROID_STEP5.md)
 
-### 레포에 완료 ✅
+### 레포 + 로컬 완료 ✅
 
 - [x] `npx cap add android` · `android/` scaffold
 - [x] ML Kit OCR (한글+라틴) · `MlKitOcrPlugin`
 - [x] 카메라/갤러리 권한 · auth deep link
-- [x] RevenueCat Android API key 코드 (`VITE_REVENUECAT_ANDROID_API_KEY`)
-- [x] debug APK 빌드 검증 (로컬)
+- [x] RevenueCat Android API key 코드 경로
+- [x] debug / release 빌드 검증
+- [x] **실기기** Run ▶ — OCR · 로그인 · 동기화
+- [x] upload keystore (`~/quote-upload.jks`) · **Signed AAB**
 
-### 다음 (Play 출시 전) ⏳
+### Play Console (다음) ⏳
 
-- [x] Android Studio → **실기기 Run ▶** (OCR / 로그인 스모크)
-- [x] upload keystore · Signed AAB
-- [ ] Play Console **조직 계정** (D-U-N-S) · 앱 생성 · 내부 테스트
-- [ ] Play Billing 상품 + RevenueCat Android 연동
-- [ ] Play privacy/support URL → quote.tealdot.dev
+- [ ] D-U-N-S 발급
+- [ ] **조직 계정** (Tealdot) · 사업자 인증
+- [ ] 앱 생성 · 스토어 등록정보 · 스크린샷
+- [ ] privacy / support → quote.tealdot.dev
+- [ ] 콘텐츠 등급 · 데이터 보안
+- [ ] **내부 테스트** AAB 업로드 · 테스터
+- [ ] Play Billing tip 3종 + RC Android (`goog_…`)
+- [ ] (Pro 출시 시) Android 구독 상품 + RC `pro`
+- [ ] 내부 → closed/open → **프로덕션**
 
-**첫 Play 버전:** `1.1.0` (versionCode 1) — iOS 1.0.1과 별도 트랙
+**첫 Play 버전:** `1.1.0` (versionCode 1)
 
 ---
 
@@ -133,14 +234,21 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 > 스펙: [`PRO_SUBSCRIPTION.md`](./PRO_SUBSCRIPTION.md)
 
-**유료 전용:** 워터마크 제거 · Markdown 내보내기 · Obsidian URI · Notion 내보내기  
-**무료 유지:** 기록 · OCR · 동기화 · 워터마크 포함 이미지 공유 · 후원(tip)
+**유료 전용:** 워터마크 제거 · Markdown · Obsidian · Notion  
+**무료 유지:** 기록 · OCR · 동기화 · 워터마크 포함 공유 · 후원(tip)
+
+### 코드 ✅ (`a17b990`)
 
 - [x] Pro entitlement 게이팅 · Settings / Share UX
-- [x] Markdown / Obsidian / Notion export 코드
-- [ ] ASC / Play 구독 상품 `app.quote.note.pro.monthly` (₩3,300)
+- [x] Markdown / Obsidian URI / Notion export
+- [x] 후원과 Pro 구분 UI
+
+### 스토어 · 릴리스 ⏳
+
+- [ ] ASC + Play 구독 `app.quote.note.pro.monthly` (₩3,300)
 - [ ] RevenueCat entitlement `pro` + Offering
-- [ ] `VITE_PRO_PREVIEW` 끄고 TestFlight / 내부테스트 QA
+- [ ] Preview env 끄고 TestFlight / Play QA
+- [ ] **iOS 1.1.x** (Pro 포함) App Store 제출
 
 ---
 
@@ -162,25 +270,18 @@ Phase I    SMTP (noreply@tealdot.dev)        ⏸ 다음에
 
 # Phase E — (선택) iPad
 
-1.0.1 또는 1.1 전에 iPhone only vs iPad 유지 결정 — `ROADMAP.md` 참고
+1.1 전에 iPhone only vs iPad 유지 결정 — `ROADMAP.md` 참고
 
 ---
 
-# 이번 구간에 넣지 않는 것
+# Phase I — SMTP ⏸
 
-| 항목 | 시기 |
-| --- | --- |
-| SMTP / Resend | Phase I (원할 때) |
-| PWA 설치형 마감 | 1.1+ / 2.0 |
-| 딥링크 Associated Domains | Step 3 |
-| 웹 문장 열람 (Goal C) | 1.1+ / 2.0 |
-| AR (Goal D) | 연말 |
+- [ ] Resend(등) · `noreply@tealdot.dev` · Supabase SMTP 설정
 
 ---
 
-## 다음 추천 순서
+## 다음에 할 일 (한 줄)
 
-1. **Play Console 조직 계정** — D-U-N-S → AAB 내부 테스트
-2. **Quote Pro** — 스토어 구독 상품 + RC `pro` → Preview 끄고 QA
-3. **Phase C** — iOS 1.0.1 리뷰·크래시 모니터링
-4. (여유 시) **SMTP** · EN 표지 hit rate
+1. **D-U-N-S** → Play **조직 계정** → **내부 테스트 AAB**
+2. **Pro** 구독 + RC → Preview 끄고 **iOS 1.1.x / Android 1.1.0** 제출
+3. **Phase C** 모니터링 (병행)
