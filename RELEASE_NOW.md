@@ -3,7 +3,7 @@
 > 상태: **iOS 1.0.1 운영 중** · **quote.tealdot.dev 라이브** · **Android AAB 준비 완료(로컬)** · **Quote Pro 코드 머지(main) · 스토어 미연결**
 > App Store: https://apps.apple.com/kr/app/id6790071377
 > Quote 웹: https://quote.tealdot.dev
-> 최종 업데이트: **2026-07-25**
+> 최종 업데이트: **2026-07-26**
 >
 > 관련: `ROADMAP.md` · `TEALDOT_DOMAIN.md` · `ANDROID_STEP5.md` · `PRO_SUBSCRIPTION.md` · `LAUNCH_CHECKLIST.md`
 
@@ -30,13 +30,14 @@ Phase G    Tealdot 도메인 (quote.tealdot.dev) ✅ (2026-07-23)
 Phase H    Android Step 5                     🔄 AAB·실기기 ✅ · Play Console ⏳
 Phase J    Quote Pro (구독 1차)               🔄 코드 ✅ · 스토어 상품 ⏳
 Phase C    출시 후 모니터링                  🔄
+Phase K    언어 확장 (Goal A/B)               ⏸ Android·Pro 이후 · ROADMAP
 Phase I    SMTP (noreply@tealdot.dev)        ⏸ 원할 때
 Phase D/E  표지 EN / iPad                    ⏸ 후순위
 ```
 
 ---
 
-## 향후 업무 전체 스킴 (2026-07-25)
+## 향후 업무 전체 스킴 (2026-07-26)
 
 ### 우선순위 1 — Android Play 내부 테스트
 
@@ -87,6 +88,24 @@ Phase D/E  표지 EN / iPad                    ⏸ 후순위
 
 ---
 
+### 우선순위 4 — 언어 확장 (Phase K · Goal A/B)
+
+> 상세: [`ROADMAP.md`](./ROADMAP.md) Goal A / Goal B · 아래 **Phase K**
+
+| 단계 | 범위 | 난이도 | 대략 공수 (1인 기준) |
+| --- | --- | --- | --- |
+| **K0** | OCR/표지/i18n **파라미터화** (언어 추가 = 설정) | 중 | **3~5일** |
+| **K1 · Goal A** | 일본어 정식 — UI 재노출 + OCR `ja-JP` + openBD + 문장분할 | 중~높 | **1.5~3주** (세로쓰기 제외 시 짧음) |
+| **K1a** | 세로쓰기(縦書き) **후처리 / 안내 UX** | 높 | **+1~2주** (별도 스파이크) |
+| **K2 · Goal B** | 유럽어 1언어 (예: 독일어) 템플릿 검증 | 낮~중 | **3~7일 / 언어** |
+| **K2+** | 프 · 스 · 덴 · 핀 순차 | 낮 (반복) | **언어당 2~5일** |
+
+**언제:** Android 내부테스트 + Pro 1.1.x 제출 **이후**. Play/Pro와 **동시에 깊게 파지 말 것**.
+
+**일본어 세로쓰기 정책 (권장):** 1차는 **가로쓰기(横書き) 중심**으로 “정식 대응”을 끝낸다. 세로쓰기·우측부터 읽는 판형은 OCR 줄 순서가 깨지기 쉬우므로, **감지 시 경고 + 수동 문장 선택/편집**으로 완화하고, 완벽한 자동 재정렬은 K1a에서.
+
+---
+
 ### 후순위 / 이번 구간 제외
 
 | 항목 | 시기 |
@@ -96,6 +115,7 @@ Phase D/E  표지 EN / iPad                    ⏸ 후순위
 | Associated Domains (유니버설 링크) | Step 3 |
 | iPad 대응 결정 | Phase E |
 | AR (Goal D) | 연말 |
+| 일본어 세로쓰기 **완전 자동** 재정렬 | Phase K1a (스파이크 후 결정) |
 
 ---
 
@@ -108,6 +128,7 @@ Phase D/E  표지 EN / iPad                    ⏸ 후순위
 [릴리스]    iOS 1.1.x (Pro) TestFlight → App Store
 [릴리스]    Android 1.1.0 내부 → 공개/프로덕션
 [운영]      Phase C 모니터링 · SMTP·표지는 여유 시
+[이후]      Phase K0 → K1 일본어(가로) → K2 유럽어 1개씩
 ```
 
 ---
@@ -280,8 +301,44 @@ Phase D/E  표지 EN / iPad                    ⏸ 후순위
 
 ---
 
+# Phase K — 언어 확장 (Goal A / B) ⏸
+
+> 상세 구현 경로: [`ROADMAP.md`](./ROADMAP.md) Goal A · Goal B  
+> **지금 앱:** Settings UI = **ko / en** (ja 문자열은 코드에 있으나 선택 숨김) · OCR = `ko-KR` + `en-US` 중심
+
+### K0 — 기반 (한 번만)
+
+- [ ] OCR `recognitionLanguages`를 앱 언어 / 감지 결과로 **동적 구성**
+- [ ] 표지: locale → provider 순서를 설정 테이블화
+- [ ] `splitIntoSentences` 구두점 세트 언어별 확장 (`。！？` 등)
+- [ ] “언어 추가 체크리스트” 문서화 (UI · 폰트 · OCR · 표지 · QA)
+
+### K1 — Goal A 일본어 정식 (가로쓰기 우선)
+
+- [ ] Settings에 **日本語** 재노출 (번역 검수)
+- [ ] Apple Vision / ML Kit에 `ja-JP` 추가
+- [ ] 표지: openBD (또는 Google Books ja) 연동
+- [ ] 문장 분할 일본어 규칙
+- [ ] QA: 일본어 **가로쓰기** 도서 15~20권 코퍼스
+- [ ] (정책) 세로쓰기 감지 시: 경고 배너 + 문장 선택/수동 편집 안내
+
+### K1a — 세로쓰기 (縦書き) · 읽기 순서 (별도)
+
+- [ ] 스파이크: Vision bounding box로 열(column) 방향 추정 가능한지
+- [ ] 가능하면: 우측 열 → 좌측 열, 열 안 위→아래 재정렬
+- [ ] 불가/불안정하면: “세로쓰기 페이지는 문장을 직접 골라 주세요” UX로 고정
+- [ ] QA: 문고본 세로쓰기 10페이지 샘플
+
+### K2 — Goal B 유럽어 순차
+
+- [ ] 독일어 (템플릿 검증)
+- [ ] 프랑스어 → 스페인어 → 덴마크어 → 핀란드어 (한 언어씩 배포)
+
+---
+
 ## 다음에 할 일 (한 줄)
 
 1. **D-U-N-S** → Play **조직 계정** → **내부 테스트 AAB**
 2. **Pro** 구독 + RC → Preview 끄고 **iOS 1.1.x / Android 1.1.0** 제출
 3. **Phase C** 모니터링 (병행)
+4. (이후) **Phase K** — 일본어 가로쓰기 → 유럽어 순차 · 세로쓰기는 K1a
