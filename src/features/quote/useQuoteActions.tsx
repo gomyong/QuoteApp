@@ -40,6 +40,11 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
     setSheetOpen(true);
   }, []);
 
+  const requestShare = useCallback((quote: Quote) => {
+    setTarget(quote);
+    setShareOpen(true);
+  }, []);
+
   const handleEdit = useCallback(() => {
     setEditOpen(true);
   }, []);
@@ -70,7 +75,13 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
     async (patch: {
       content: string;
       thoughts: string | null;
-      book: { title: string; author: string | null } | null;
+      page?: number | null;
+      book: {
+        title: string;
+        author: string | null;
+        isbn?: string | null;
+        cover_url?: string | null;
+      } | null;
     }) => {
       if (!target) return;
       setSaving(true);
@@ -80,6 +91,7 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           {
             content: patch.content,
             thoughts: patch.thoughts,
+            page: patch.page,
             book: patch.book,
           },
           user?.id ?? null,
@@ -152,6 +164,8 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
           content={target?.content ?? ""}
           bookTitle={book?.title ?? null}
           author={book?.author ?? null}
+          thoughts={target?.thoughts ?? null}
+          page={target?.page ?? null}
           onClose={() => {
             setShareOpen(false);
             // keep `target` around only if another sheet is open; here
@@ -164,5 +178,5 @@ export const useQuoteActions = ({ getBook, onChanged }: UseQuoteActionsOptions) 
     [sheetOpen, target, confirmOpen, saving, editOpen, shareOpen, book, handleEdit, handleShare, handleAskDelete, handleConfirmDelete, handleSaveEdit, t],
   );
 
-  return { requestActions, portal } as const;
+  return { requestActions, requestShare, portal } as const;
 };

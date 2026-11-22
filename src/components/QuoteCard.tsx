@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, Heart } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart, MoreHorizontal, Share2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useTranslation } from "@/i18n/LanguageProvider";
@@ -9,13 +9,15 @@ interface QuoteCardProps {
   bookTitle?: string;
   author?: string;
   thoughts?: string;
+  page?: number | null;
   isFavorite?: boolean;
   createdAt?: string;
   index?: number;
   onToggleFavorite?: () => void | Promise<void>;
+  onShare?: () => void;
   /**
-   * Fired when the user long-presses the card (~500ms). Typically opens an
-   * action sheet offering "수정 / 삭제".
+   * Fired when the user long-presses the card (~500ms) or taps the more button.
+   * Typically opens an action sheet offering "공유 / 수정 / 삭제".
    */
   onLongPress?: () => void;
 }
@@ -41,9 +43,11 @@ const QuoteCard = ({
   bookTitle,
   author,
   thoughts,
+  page,
   isFavorite = false,
   index = 0,
   onToggleFavorite,
+  onShare,
   onLongPress,
 }: QuoteCardProps) => {
   const { t } = useTranslation();
@@ -225,33 +229,79 @@ const QuoteCard = ({
         </p>
       )}
 
-      <div className="mt-4 flex items-center justify-between relative z-10">
-        <div className="flex flex-col gap-0.5">
+      <div className="mt-4 flex items-center justify-between gap-2 relative z-10">
+        <div className="flex flex-col gap-0.5 min-w-0">
           {bookTitle && (
-            <span className="text-accent text-xs font-medium">{bookTitle}</span>
+            <span className="text-accent text-xs font-medium truncate">{bookTitle}</span>
           )}
-          {author && (
-            <span className="text-muted-foreground text-xs">{author}</span>
+          {(author || (typeof page === "number" && page > 0)) && (
+            <span className="text-muted-foreground text-xs truncate">
+              {author}
+              {author && typeof page === "number" && page > 0 ? " · " : ""}
+              {typeof page === "number" && page > 0 ? `p.${page}` : ""}
+            </span>
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleHeartClick}
-          aria-label={t("quote.favorite")}
-          className="p-1.5 rounded-full transition-all duration-300"
-          style={{ touchAction: "manipulation" }}
-        >
-          <Heart
-            size={16}
-            className={
-              liked
-                ? "fill-accent text-accent scale-110"
-                : "text-muted-foreground hover:text-accent"
-            }
-            style={{ transition: "all 0.3s ease" }}
-          />
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          {onShare && (
+            <button
+              type="button"
+              onClick={(e) => {
+                if (longPressFired.current) {
+                  longPressFired.current = false;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+                }
+                onShare();
+              }}
+              aria-label={t("common.share")}
+              className="p-1.5 rounded-full text-muted-foreground hover:text-accent transition-colors"
+              style={{ touchAction: "manipulation" }}
+            >
+              <Share2 size={15} />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleHeartClick}
+            aria-label={t("quote.favorite")}
+            className="p-1.5 rounded-full transition-all duration-300"
+            style={{ touchAction: "manipulation" }}
+          >
+            <Heart
+              size={16}
+              className={
+                liked
+                  ? "fill-accent text-accent scale-110"
+                  : "text-muted-foreground hover:text-accent"
+              }
+              style={{ transition: "all 0.3s ease" }}
+            />
+          </button>
+
+          {onLongPress && (
+            <button
+              type="button"
+              onClick={(e) => {
+                if (longPressFired.current) {
+                  longPressFired.current = false;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  return;
+                }
+                onLongPress();
+              }}
+              aria-label={t("quote.action_default_title")}
+              className="p-1.5 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+              style={{ touchAction: "manipulation" }}
+            >
+              <MoreHorizontal size={15} />
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );

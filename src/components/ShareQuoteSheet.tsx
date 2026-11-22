@@ -1,17 +1,9 @@
 /**
  * Bottom sheet for turning a quote into a shareable image.
  *
- * Interaction model:
- *   - User picks 1080×1350 (post) or 1080×1920 (story).
- *   - We re-render the Canvas on every size change and preview the PNG
- *     inline (scaled down via CSS). The preview is the exact bytes we'll
- *     share, so WYSIWYG across platforms.
- *   - Tapping "Share" hands off to the native share sheet (iOS → Save to
- *     Photos, Instagram, etc.) or a web fallback.
- *
- * The canvas renderer is async (waits for webfonts), so we reflect a
- * busy state on format change and disable the share button until the
- * first successful render lands.
+ * Supports 1080×1350 (post) / 1080×1920 (story), 3 visual themes
+ * (Paper, Midnight Navy, Dark Ink), Sans vs Serif typography,
+ * optional user thoughts, and watermark toggle.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -31,12 +23,15 @@ import {
   renderQuoteCard,
   SHARE_SIZES,
   type RenderedImage,
+  type ShareFontStyle,
   type ShareSize,
+  type ShareTheme,
 } from "@/features/share/renderQuoteCard";
 import { sharePng } from "@/features/share/shareImage";
 import { splitForShare } from "@/features/share/splitForShare";
 import SentenceSelector from "@/components/SentenceSelector";
 import { usePro } from "@/features/iap/ProProvider";
+import { PRO_ENABLED } from "@/config/pro";
 import ProSheet from "@/components/ProSheet";
 
 type Props = {
@@ -44,38 +39,54 @@ type Props = {
   content: string;
   bookTitle?: string | null;
   author?: string | null;
+  thoughts?: string | null;
+  page?: number | null;
   onClose: () => void;
 };
 
-const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) => {
+const THEMES: Array<{ id: ShareTheme; labelKey: string }> = [
+  { id: "paper", labelKey: "share.tpl_paper" },
+  { id: "navy", labelKey: "share.tpl_navy" },
+  { id: "dark", labelKey: "share.tpl_dark" },
+];
+
+const FONTS: Array<{ id: ShareFontStyle; labelKey: string }> = [
+  { id: "sans", labelKey: "share.font_sans" },
+  { id: "serif", labelKey: "share.font_serif" },
+];
+
+const ShareQuoteSheet = ({
+  open,
+  content,
+  bookTitle,
+  author,
+  thoughts,
+  page,
+  onClose,
+}: Props) => {
   const { t, lang } = useTranslation();
   const { isPro } = usePro();
   const [selectedSize, setSelectedSize] = useState<ShareSize>(SHARE_SIZES[0]);
+  const [theme, setTheme] = useState<ShareTheme>("paper");
+  const [fontStyle, setFontStyle] = useState<ShareFontStyle>("sans");
+  const [includeThoughts, setIncludeThoughts] = useState(false);
   const [image, setImage] = useState<RenderedImage | null>(null);
   const [rendering, setRendering] = useState(false);
   const [sharing, setSharing] = useState(false);
-  /** Pro-only: omit watermark. Ignored when !isPro. */
-  const [removeWatermark, setRemoveWatermark] = useState(true);
+  const [removeWatermark, setRemoveWatermark] = useState(false);
   const [proOpen, setProOpen] = useState(false);
-  // Token guards against a slow render resolving after the sheet closes
-  // (or a newer render has been requested) and clobbering fresh state.
+  const canToggleWatermark = !PRO_ENABLED || isPro;
   const renderToken = useRef(0);
 
-  // Sentence-level selection — mirrors the OCR capture flow so long
-  // quotes can be cherry-picked down to just the parts the user wants
-  // on the shared image. Only surfaces when there's more than one
-  // shareable unit; otherwise the sheet behaves identically to before.
   const sentences = useMemo(() => splitForShare(content), [content]);
   const multiSentence = sentences.length > 1;
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(sentences.map((_, i) => i)),
   );
-  // Re-seed selection whenever the incoming quote (and therefore its
-  // tokenization) changes — e.g. when the sheet is re-used for a
-  // different card.
   useEffect(() => {
     setSelected(new Set(sentences.map((_, i) => i)));
   }, [sentences]);
+
   const toggleSentence = (i: number) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -85,11 +96,6 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     });
   };
 
-  // What actually goes to the renderer. Single-sentence path returns
-  // the original text verbatim (preserves any intentional whitespace
-  // the user kept on the note); multi-sentence path joins the picked
-  // pieces with a single space — the canvas wrapper will rewrap them
-  // just fine.
   const effectiveContent = useMemo(() => {
     if (!multiSentence) return content;
     const picked = Array.from(selected)
@@ -99,16 +105,12 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     return picked.join(" ").trim();
   }, [multiSentence, content, selected, sentences]);
 
-  // Re-render whenever the sheet opens, the effective content changes
-  // (either the input quote itself or the user's sentence selection),
-  // the user picks a different size, or the UI language flips.
   useEffect(() => {
     if (!open) {
       setImage(null);
       return;
     }
     if (!effectiveContent) {
-      // Nothing selected — skip render, show empty state instead.
       setImage(null);
       setRendering(false);
       return;
@@ -116,21 +118,26 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     const token = ++renderToken.current;
     setRendering(true);
     setImage(null);
-    const showWatermark = !(isPro && removeWatermark);
+    const showWatermark = !(canToggleWatermark && removeWatermark);
     (async () => {
       try {
         const r = await renderQuoteCard({
           content: effectiveContent,
           bookTitle,
           author,
+          thoughts,
+          includeThoughts,
+          page,
           lang,
           size: selectedSize,
+          theme,
+          fontStyle,
           showWatermark,
         });
         if (renderToken.current !== token) return;
         setImage(r);
       } catch {
-        /* leave image null — button stays disabled */
+        /* leave image null */
       } finally {
         if (renderToken.current === token) setRendering(false);
       }
@@ -140,9 +147,14 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
     effectiveContent,
     bookTitle,
     author,
+    thoughts,
+    includeThoughts,
+    page,
     lang,
     selectedSize,
-    isPro,
+    theme,
+    fontStyle,
+    canToggleWatermark,
     removeWatermark,
   ]);
 
@@ -166,23 +178,18 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
         title: t("share.title"),
       });
     } catch {
-      /* swallow — the share sheet dismissal is the user feedback */
+      /* ignore */
     } finally {
       setSharing(false);
     }
   };
 
-  // Preview height caps so the tall story format still fits on small screens.
-  // Aspect ratio follows the *rendered* image when available (the renderer
-  // may auto-promote a too-long Post → Story, so the visible bytes and the
-  // preview frame should agree).
   const previewStyle = useMemo<React.CSSProperties>(() => {
     const w = image?.width ?? selectedSize.width;
     const h = image?.height ?? selectedSize.height;
     return {
       aspectRatio: `${w} / ${h}`,
-      // 60vh cap, narrower for portrait phone screens with on-screen keyboards etc.
-      maxHeight: "min(60dvh, 520px)",
+      maxHeight: "min(52dvh, 460px)",
       width: "auto",
     };
   }, [selectedSize, image]);
@@ -232,36 +239,75 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
             </div>
 
             <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
-              {/* Size selector */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {SHARE_SIZES.map((s) => {
-                  const active = s.id === selectedSize.id;
-                  const labelKey =
-                    s.id === "post" ? "share.size_square" : "share.size_story";
+              {/* Theme selector */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {THEMES.map((tpl) => {
+                  const active = tpl.id === theme;
                   return (
                     <button
-                      key={s.id}
+                      key={tpl.id}
                       type="button"
-                      onClick={() => setSelectedSize(s)}
-                      className={`text-xs py-2.5 rounded-xl transition-colors ${
+                      onClick={() => setTheme(tpl.id)}
+                      className={`text-xs py-2 rounded-xl transition-colors ${
                         active
-                          ? "bg-accent text-accent-foreground"
+                          ? "bg-accent text-accent-foreground font-medium"
                           : "bg-glass-border/10 text-foreground hover:bg-glass-border/20"
                       }`}
                     >
-                      {t(labelKey)}
+                      {t(tpl.labelKey)}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Sentence selector — only surfaced when there's more than
-                  one shareable unit. Same tap-to-toggle / filled-circle
-                  treatment as the OCR capture flow so the interaction
-                  feels identical across the two places the user
-                  composes a quote. */}
+              {/* Size + Font selector row */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-glass-border/10 p-1">
+                  {SHARE_SIZES.map((s) => {
+                    const active = s.id === selectedSize.id;
+                    const shortLabel = s.id === "post" ? "4:5" : "9:16";
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSelectedSize(s)}
+                        className={`text-xs py-1.5 rounded-lg transition-colors ${
+                          active
+                            ? "bg-card text-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {shortLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-glass-border/10 p-1">
+                  {FONTS.map((f) => {
+                    const active = f.id === fontStyle;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setFontStyle(f.id)}
+                        className={`text-xs py-1.5 rounded-lg transition-colors ${
+                          f.id === "serif" ? "font-serif" : "font-sans"
+                        } ${
+                          active
+                            ? "bg-card text-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {t(f.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {multiSentence && (
-                <div className="mb-4 space-y-2">
+                <div className="mb-3 space-y-2">
                   <p className="text-xs text-muted-foreground">
                     {t("share.select_sentences_hint")}
                   </p>
@@ -269,17 +315,13 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                     sentences={sentences}
                     selected={selected}
                     onToggle={toggleSentence}
-                    maxHeightClass="max-h-52"
+                    maxHeightClass="max-h-44"
                   />
                 </div>
               )}
 
-              {/* Overflow banners — surface to the user when the renderer
-                  auto-promoted the size (Strategy B) or flagged the quote
-                  as too long to fit even at the largest canvas + smallest
-                  allowed font (Strategy C placeholder). */}
               {image && (image.wasPromoted || image.tooLong) && (
-                <div className="mb-4 space-y-2">
+                <div className="mb-3 space-y-2">
                   {image.wasPromoted && (
                     <div className="flex items-start gap-2 rounded-xl bg-glass-border/15 px-3 py-2.5">
                       <Info
@@ -305,9 +347,34 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                 </div>
               )}
 
-              {/* Watermark / Pro gate */}
-              <div className="mb-4">
-                {isPro ? (
+              {/* Thoughts + Watermark toggles */}
+              <div className="space-y-2 mb-4">
+                {thoughts?.trim() && (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={includeThoughts}
+                    onClick={() => setIncludeThoughts((v) => !v)}
+                    className="w-full flex items-center justify-between rounded-xl bg-glass-border/10 px-3 py-2.5"
+                  >
+                    <span className="text-xs text-foreground">
+                      {t("share.include_thoughts")}
+                    </span>
+                    <span
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        includeThoughts ? "bg-accent" : "bg-glass-border/40"
+                      }`}
+                    >
+                      <span
+                        className={`absolute left-0 top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                          includeThoughts ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                )}
+
+                {canToggleWatermark ? (
                   <button
                     type="button"
                     role="switch"
@@ -324,7 +391,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                        className={`absolute left-0 top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
                           removeWatermark ? "translate-x-5" : "translate-x-0.5"
                         }`}
                       />
@@ -354,7 +421,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                   style={previewStyle}
                 >
                   {rendering && !image ? (
-                    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs px-4">
                       <Loader2 size={14} className="animate-spin" />
                       {t("share.generating")}
                     </div>
@@ -366,8 +433,6 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
                       draggable={false}
                     />
                   ) : !effectiveContent ? (
-                    // Empty selection — nothing to preview. Tells the user
-                    // why the button below is disabled.
                     <div className="text-muted-foreground text-xs px-4 text-center">
                       {t("share.sentences_none_selected")}
                     </div>
@@ -406,7 +471,7 @@ const ShareQuoteSheet = ({ open, content, bookTitle, author, onClose }: Props) =
   return (
     <>
       {createPortal(body, document.body)}
-      <ProSheet open={proOpen} onClose={() => setProOpen(false)} />
+      {PRO_ENABLED && <ProSheet open={proOpen} onClose={() => setProOpen(false)} />}
     </>
   );
 };

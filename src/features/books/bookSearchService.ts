@@ -43,6 +43,7 @@ import type {
 } from "./types";
 import { looksContained } from "./textSimilarity";
 import { kakaoBooksProvider } from "./providers/kakao";
+import { aladinBooksProvider } from "./providers/aladin";
 import { naverBooksProvider } from "./providers/naver";
 import { googleBooksProvider } from "./providers/google";
 import { openLibraryProvider } from "./providers/openLibrary";
@@ -54,9 +55,10 @@ import {
 /** Every adapter we know about, in canonical (Korean-first) order. */
 const ALL_PROVIDERS: BookSearchProvider[] = [
   kakaoBooksProvider,
-  naverBooksProvider,
+  aladinBooksProvider,
   googleBooksProvider,
   openLibraryProvider,
+  naverBooksProvider,
 ];
 
 const hasHangul = (s: string): boolean => /[\uac00-\ud7a3]/.test(s);
@@ -77,7 +79,7 @@ const routeForTitle = (
         googleBooksProvider,
         openLibraryProvider,
         kakaoBooksProvider,
-        naverBooksProvider,
+        aladinBooksProvider,
       ],
       langRestrict: "en",
     };
@@ -213,6 +215,30 @@ export const fetchBestCoverMulti = async (
   };
   await setCachedCoverLookup(title, normalizedAuthor, result);
   return result;
+};
+
+/**
+ * Interactive autocomplete search — queries enabled providers in order and
+ * returns deduplicated candidates quickly for Capture / Edit book pickers.
+ */
+export const searchBooksAutocomplete = async (
+  query: string,
+  opts: BookSearchOptions = {},
+): Promise<BookCandidate[]> => {
+  const { candidates } = await searchBooksMulti(query, null, {
+    maxResults: opts.maxResults ?? 6,
+    signal: opts.signal,
+    langRestrict: opts.langRestrict,
+  });
+  const seen = new Set<string>();
+  const out: BookCandidate[] = [];
+  for (const c of candidates) {
+    const key = `${c.title.toLowerCase().trim()}::${(c.authors[0] ?? "").toLowerCase().trim()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
 };
 
 /**

@@ -32,7 +32,7 @@ export type BookCandidate = {
   provider: BookProviderId;
 };
 
-export type BookProviderId = "kakao" | "naver" | "google" | "openLibrary";
+export type BookProviderId = "kakao" | "aladin" | "naver" | "google" | "openLibrary";
 
 export type BookSearchOptions = {
   maxResults?: number;

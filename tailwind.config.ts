@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['"Pretendard Variable"', '"Pretendard"', '"Inter"', 'system-ui', 'sans-serif'],
         display: ['"Inter"', '"Pretendard Variable"', 'system-ui', 'sans-serif'],
+        serif: ['"Noto Serif KR"', '"Noto Serif JP"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

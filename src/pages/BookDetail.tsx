@@ -63,7 +63,7 @@ const BookDetail = () => {
     });
   }, [book, refresh]);
 
-  const { requestActions, portal } = useQuoteActions({
+  const { requestActions, requestShare, portal } = useQuoteActions({
     getBook: () => book ?? undefined,
     onChanged: refresh,
   });
@@ -259,11 +259,13 @@ const BookDetail = () => {
                   bookTitle={book?.title}
                   author={book?.author ?? undefined}
                   thoughts={q.thoughts ?? undefined}
+                  page={q.page}
                   isFavorite={q.is_favorite}
                   onToggleFavorite={async () => {
                     await repo.toggleFavorite(q.id);
                     refresh();
                   }}
+                  onShare={() => requestShare(q)}
                   onLongPress={() => requestActions(q)}
                   index={i}
                 />

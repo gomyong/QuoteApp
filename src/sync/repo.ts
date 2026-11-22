@@ -15,12 +15,28 @@ const uuid = () =>
 
 const nowIso = () => new Date().toISOString();
 
+const changeListeners = new Set<() => void>();
+const notifyChange = () => {
+  for (const fn of changeListeners) {
+    try {
+      fn();
+    } catch {
+      /* ignore listener errors */
+    }
+  }
+};
+
 export type SaveQuoteInput = {
   content: string;
   thoughts?: string | null;
   page?: number | null;
   is_favorite?: boolean;
-  book?: { title: string; author?: string | null; isbn?: string | null } | null;
+  book?: {
+    title: string;
+    author?: string | null;
+    isbn?: string | null;
+    cover_url?: string | null;
+  } | null;
   image?: { base64: string; mime: string } | null;
 };
 
@@ -80,6 +96,7 @@ const upsertBookByTitle = async (
   title: string,
   author: string | null,
   userId: string | null,
+  meta?: { isbn?: string | null; cover_url?: string | null },
 ): Promise<Book> => {
   const db = await getDB();
   const all = await db.getAll("books");
@@ -111,6 +128,14 @@ const upsertBookByTitle = async (
       merged.author = normAuthor;
       changed = true;
     }
+    if (!merged.isbn && meta?.isbn) {
+      merged.isbn = meta.isbn;
+      changed = true;
+    }
+    if (!merged.cover_url && meta?.cover_url) {
+      merged.cover_url = meta.cover_url;
+      changed = true;
+    }
     if (merged.user_id === null && userId) {
       merged.user_id = userId;
       changed = true;
@@ -129,8 +154,8 @@ const upsertBookByTitle = async (
     user_id: userId,
     title: title.trim(),
     author: normAuthor,
-    isbn: null,
-    cover_url: null,
+    isbn: meta?.isbn ?? null,
+    cover_url: meta?.cover_url ?? null,
     created_at: nowIso(),
     updated_at: nowIso(),
   };
@@ -140,6 +165,13 @@ const upsertBookByTitle = async (
 };
 
 export const repo = {
+  subscribeChange(fn: () => void): () => void {
+    changeListeners.add(fn);
+    return () => {
+      changeListeners.delete(fn);
+    };
+  },
+
   async getSettings(): Promise<Settings> {
     const db = await getDB();
     const row = await db.get("settings", "storeImages");
@@ -279,6 +311,10 @@ export const repo = {
         input.book.title,
         input.book.author ?? null,
         currentUserId,
+        {
+          isbn: input.book.isbn ?? null,
+          cover_url: input.book.cover_url ?? null,
+        },
       );
       book_id = book.id;
     }
@@ -314,6 +350,7 @@ export const repo = {
       await enqueue({ op: { type: "upload_image", imageId: imgId } });
     }
 
+    notifyChange();
     return quote;
   },
 
@@ -330,7 +367,12 @@ export const repo = {
       thoughts?: string | null;
       page?: number | null;
       is_favorite?: boolean;
-      book?: { title: string; author?: string | null } | null;
+      book?: {
+        title: string;
+        author?: string | null;
+        isbn?: string | null;
+        cover_url?: string | null;
+      } | null;
     },
     currentUserId: string | null,
   ): Promise<Quote | null> {
@@ -346,6 +388,10 @@ export const repo = {
         patch.book.title,
         patch.book.author ?? null,
         currentUserId,
+        {
+          isbn: patch.book.isbn ?? null,
+          cover_url: patch.book.cover_url ?? null,
+        },
       );
       book_id = book.id;
     }
@@ -366,6 +412,7 @@ export const repo = {
     };
     await db.put("quotes", updated);
     await enqueue({ op: { type: "upsert_quote", quoteId: id } });
+    notifyChange();
     return updated;
   },
 
@@ -380,6 +427,7 @@ export const repo = {
     };
     await db.put("quotes", updated);
     await enqueue({ op: { type: "upsert_quote", quoteId: id } });
+    notifyChange();
   },
 
   async softDeleteQuote(id: string) {
@@ -389,6 +437,7 @@ export const repo = {
     const updated: Quote = { ...q, deleted_at: nowIso(), updated_at: nowIso() };
     await db.put("quotes", updated);
     await enqueue({ op: { type: "delete_quote", quoteId: id } });
+    notifyChange();
   },
 
   async outboxSize(): Promise<number> {

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, PencilLine, Shuffle } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart, PencilLine, Share2, Shuffle } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
@@ -7,6 +7,10 @@ interface DailyQuoteProps {
   content: string;
   bookTitle?: string;
   author?: string;
+  page?: number | null;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void | Promise<void>;
+  onShare?: () => void;
   /**
    * Called when the user taps the shuffle icon. Omit to hide the button
    * (e.g. when there's only the default welcome message to show).
@@ -14,27 +18,28 @@ interface DailyQuoteProps {
   onShuffle?: () => void;
 }
 
-// Match the visible clamp used by regular QuoteCards so the featured
-// card and the recent-list feel consistent at a glance.
 const CLAMP_LINES = 3;
 
-const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) => {
+const DailyQuote = ({
+  content,
+  bookTitle,
+  author,
+  page,
+  isFavorite = false,
+  onToggleFavorite,
+  onShare,
+  onShuffle,
+}: DailyQuoteProps) => {
   const { t } = useTranslation();
 
   const [expanded, setExpanded] = useState(false);
   const [overflowed, setOverflowed] = useState(false);
   const measureRef = useRef<HTMLParagraphElement | null>(null);
 
-  // Reset expansion whenever the content changes (e.g. the user shuffled).
-  // Otherwise a short new quote would show an "접기" toggle that does nothing.
   useEffect(() => {
     setExpanded(false);
   }, [content]);
 
-  // Measure an off-screen copy of the quote at the exact same typography
-  // as the visible paragraph to decide whether the "펼쳐보기" affordance
-  // is worth showing. Using scrollHeight on the clamped element is
-  // unreliable because `-webkit-line-clamp` actively truncates it.
   useLayoutEffect(() => {
     const el = measureRef.current;
     if (!el) return;
@@ -82,9 +87,6 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
           )}
         </div>
 
-        {/* Hidden measurement copy — identical typography, no clamp.
-            Body size matches regular QuoteCards (text-base) so the daily
-            quote doesn't visually shout over the rest of the feed. */}
         <p
           ref={measureRef}
           aria-hidden="true"
@@ -131,18 +133,56 @@ const DailyQuote = ({ content, bookTitle, author, onShuffle }: DailyQuoteProps) 
           </button>
         )}
 
-        <div className="mt-6 flex items-center gap-2">
-          <div className="w-6 h-px bg-accent/40" />
-          <div>
-            {bookTitle && (
-              <span className="text-accent/80 text-xs">{bookTitle}</span>
-            )}
-            {author && (
-              <span className="text-muted-foreground text-xs ml-2">
-                {author}
-              </span>
-            )}
+        <div className="mt-6 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-px bg-accent/40 shrink-0" />
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
+              {bookTitle && (
+                <span className="text-accent/80 text-xs">{bookTitle}</span>
+              )}
+              {(author || (typeof page === "number" && page > 0)) && (
+                <span className="text-muted-foreground text-xs">
+                  {author}
+                  {author && typeof page === "number" && page > 0 ? " · " : ""}
+                  {typeof page === "number" && page > 0 ? `p.${page}` : ""}
+                </span>
+              )}
+            </div>
           </div>
+
+          {(onShare || onToggleFavorite) && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              {onShare && (
+                <button
+                  type="button"
+                  onClick={onShare}
+                  aria-label={t("common.share")}
+                  className="p-1.5 rounded-full text-muted-foreground hover:text-accent transition-colors"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Share2 size={15} />
+                </button>
+              )}
+              {onToggleFavorite && (
+                <button
+                  type="button"
+                  onClick={() => void onToggleFavorite()}
+                  aria-label={t("quote.favorite")}
+                  className="p-1.5 rounded-full transition-colors"
+                  style={{ touchAction: "manipulation" }}
+                >
+                  <Heart
+                    size={16}
+                    className={
+                      isFavorite
+                        ? "fill-accent text-accent"
+                        : "text-muted-foreground hover:text-accent"
+                    }
+                  />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

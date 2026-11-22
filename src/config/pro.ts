@@ -9,7 +9,11 @@ import { isIapPreviewMode, revenueCatApiKey } from "@/config/support";
  * Tips (consumables) stay separate and never grant Pro.
  */
 
-export const PRO_ENABLED = true;
+/**
+ * Quote Pro flag — kept false so Quote remains 100% free with voluntary
+ * one-time tips (`support.ts`) instead of subscription gates.
+ */
+export const PRO_ENABLED = false;
 
 /** RevenueCat entitlement identifier (must match dashboard). */
 export const DEFAULT_PRO_ENTITLEMENT_ID = "pro";

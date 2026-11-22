@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import { BookOpen, Loader2, Save, Tag, X } from "lucide-react";
+import BookSearchInput from "@/components/BookSearchInput";
+import { repo } from "@/sync/repo";
 import type { Quote, Book } from "@/sync/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
 
@@ -14,29 +16,38 @@ type Props = {
   onSave: (patch: {
     content: string;
     thoughts: string | null;
-    book: { title: string; author: string | null } | null;
+    page?: number | null;
+    book: {
+      title: string;
+      author: string | null;
+      isbn?: string | null;
+      cover_url?: string | null;
+    } | null;
   }) => void | Promise<void>;
 };
 
-/**
- * Full-height-ish bottom sheet for editing an existing quote. Mounts in a
- * portal so it isn't clipped by any scrollable container. ESC / backdrop /
- * the X button all close. All fields are pre-filled from the quote and book.
- */
 const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) => {
   const { t } = useTranslation();
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [bookIsbn, setBookIsbn] = useState<string | null>(null);
+  const [bookCoverUrl, setBookCoverUrl] = useState<string | null>(null);
+  const [pageStr, setPageStr] = useState("");
   const [thoughts, setThoughts] = useState("");
+  const [localBooks, setLocalBooks] = useState<Book[]>([]);
 
   // Hydrate form whenever the sheet (re-)opens on a new quote.
   useEffect(() => {
     if (!open) return;
     setContent(quote?.content ?? "");
     setThoughts(quote?.thoughts ?? "");
+    setPageStr(typeof quote?.page === "number" && quote.page > 0 ? String(quote.page) : "");
     setBookTitle(book?.title ?? "");
     setAuthor(book?.author ?? "");
+    setBookIsbn(book?.isbn ?? null);
+    setBookCoverUrl(book?.cover_url ?? null);
+    void repo.listBooksWithCounts().then(setLocalBooks);
   }, [open, quote, book]);
 
   useEffect(() => {
@@ -53,10 +64,23 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
     const trimmedContent = content.trim();
     if (!trimmedContent) return;
     const trimmedTitle = bookTitle.trim();
+    const parsedPage = pageStr.trim() ? Number.parseInt(pageStr.trim(), 10) : null;
+    const validPage =
+      parsedPage !== null && Number.isFinite(parsedPage) && parsedPage >= 0 && parsedPage <= 99999
+        ? parsedPage
+        : null;
     void onSave({
       content: trimmedContent,
       thoughts: thoughts.trim() ? thoughts.trim() : null,
-      book: trimmedTitle ? { title: trimmedTitle, author: author.trim() || null } : null,
+      page: validPage,
+      book: trimmedTitle
+        ? {
+            title: trimmedTitle,
+            author: author.trim() || null,
+            isbn: bookIsbn,
+            cover_url: bookCoverUrl,
+          }
+        : null,
     });
   };
 
@@ -124,18 +148,43 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                     <BookOpen size={14} />
                     <span className="text-xs font-medium">{t("capture.book_info_label")}</span>
                   </div>
-                  <input
+                  <BookSearchInput
                     value={bookTitle}
-                    onChange={(e) => setBookTitle(e.target.value)}
+                    onChange={(val) => {
+                      setBookTitle(val);
+                      setBookIsbn(null);
+                      setBookCoverUrl(null);
+                    }}
+                    onSelect={(meta) => {
+                      setBookTitle(meta.title);
+                      setAuthor(meta.author ?? "");
+                      setBookIsbn(meta.isbn);
+                      setBookCoverUrl(meta.coverUrl);
+                    }}
+                    localBooks={localBooks}
                     placeholder={t("edit.book_title_placeholder")}
-                    className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none border-b border-border/30 pb-2"
                   />
-                  <input
-                    value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    placeholder={t("capture.book_author_placeholder")}
-                    className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
-                  />
+                  <div className="grid grid-cols-3 gap-3 items-center">
+                    <input
+                      value={author}
+                      onChange={(e) => setAuthor(e.target.value)}
+                      placeholder={t("capture.book_author_placeholder")}
+                      className="col-span-2 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+                    />
+                    <div className="flex items-center gap-1 border-l border-border/30 pl-3">
+                      <span className="text-xs text-muted-foreground">p.</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={99999}
+                        value={pageStr}
+                        onChange={(e) => setPageStr(e.target.value)}
+                        placeholder={t("capture.page_placeholder")}
+                        className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="glass rounded-2xl p-4">

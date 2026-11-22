@@ -25,6 +25,7 @@ import {
   type NotionConnection,
 } from "@/features/export/notionSettings";
 import { usePro } from "@/features/iap/ProProvider";
+import { PRO_ENABLED } from "@/config/pro";
 
 type Props = {
   open: boolean;
@@ -55,7 +56,7 @@ const ArchiveExportSheet = ({ open, onClose, onNeedPro }: Props) => {
       setStatus(null);
       return;
     }
-    if (!isPro) {
+    if (PRO_ENABLED && !isPro) {
       onNeedPro?.();
       onClose();
       return;

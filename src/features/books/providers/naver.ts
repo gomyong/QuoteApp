@@ -130,8 +130,9 @@ const runQuery = async (
 
 export const naverBooksProvider: BookSearchProvider = {
   id: "naver",
-  label: "Naver 책 검색",
-  isEnabled: () => CLIENT_ID.length > 0 && CLIENT_SECRET.length > 0,
+  label: "Naver 책 검색 (종료됨)",
+  // Naver Book Search Open API was deprecated/retired in July 2026.
+  isEnabled: () => false,
 
   async search(title, author, opts: BookSearchOptions = {}) {
     const t = title.trim();

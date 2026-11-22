@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Mic, Type, BookOpen, Tag, Send, Loader2 } from "lucide-react";
+import { Camera, FileUp, Type, BookOpen, Tag, Send, Loader2 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import BookSearchInput from "@/components/BookSearchInput";
+import ImportHighlightsSheet from "@/components/ImportHighlightsSheet";
 import CaptureFromImage from "@/features/capture/CaptureFromImage";
 import type { PickedImage } from "@/features/ocr/pickImage";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -18,18 +20,23 @@ const Capture = () => {
   const [content, setContent] = useState("");
   const [bookTitle, setBookTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [bookIsbn, setBookIsbn] = useState<string | null>(null);
+  const [bookCoverUrl, setBookCoverUrl] = useState<string | null>(null);
+  const [pageStr, setPageStr] = useState("");
   const [thoughts, setThoughts] = useState("");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showOcr, setShowOcr] = useState(false);
-  const [recentBooks, setRecentBooks] = useState<Book[]>([]);
+  const [showImport, setShowImport] = useState(false);
+  const [localBooks, setLocalBooks] = useState<Book[]>([]);
   const lastImageRef = useRef<PickedImage | null>(null);
   const quoteInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const loadRecentBooks = async () => {
     const books = await repo.listBooksWithCounts();
-    setRecentBooks(books.slice(0, 3));
+    setLocalBooks(books);
   };
+  const recentBooks = localBooks.slice(0, 3);
 
   useEffect(() => {
     void loadRecentBooks();
@@ -38,13 +45,24 @@ const Capture = () => {
   const handleSave = async () => {
     if (!content.trim() || saving) return;
     setSaving(true);
+    const parsedPage = pageStr.trim() ? Number.parseInt(pageStr.trim(), 10) : null;
+    const validPage =
+      parsedPage !== null && Number.isFinite(parsedPage) && parsedPage >= 0 && parsedPage <= 99999
+        ? parsedPage
+        : null;
     try {
       const savedQuote = await repo.saveQuote(
         {
           content,
           thoughts,
+          page: validPage,
           book: bookTitle.trim()
-            ? { title: bookTitle, author: author || null }
+            ? {
+                title: bookTitle,
+                author: author || null,
+                isbn: bookIsbn,
+                cover_url: bookCoverUrl,
+              }
             : null,
           image: lastImageRef.current
             ? { base64: lastImageRef.current.base64, mime: lastImageRef.current.mimeType }
@@ -60,7 +78,7 @@ const Capture = () => {
       // Fire-and-forget: pull a cover through the provider chain for the
       // linked book. Repeats are cheap because ensureCoverForBook skips
       // records that already have covers or were attempted this session.
-      if (savedQuote.book_id) {
+      if (savedQuote.book_id && !bookCoverUrl) {
         void repo.getBook(savedQuote.book_id).then((b) => {
           if (b) void ensureCoverForBook(b);
         });
@@ -71,6 +89,9 @@ const Capture = () => {
         setContent("");
         setBookTitle("");
         setAuthor("");
+        setBookIsbn(null);
+        setBookCoverUrl(null);
+        setPageStr("");
         setThoughts("");
       }, 1400);
     } catch (e) {
@@ -112,19 +133,18 @@ const Capture = () => {
         >
           {[
             { icon: Camera, key: "photo", label: t("capture.from_photo"), onClick: () => setShowOcr(true) },
-            { icon: Mic, key: "voice", label: t("capture.from_voice"), onClick: () => undefined, disabled: true },
+            { icon: FileUp, key: "import", label: t("capture.from_import"), onClick: () => setShowImport(true) },
             {
               icon: Type,
               key: "type",
               label: t("capture.type_directly"),
               onClick: () => quoteInputRef.current?.focus(),
             },
-          ].map(({ icon: Icon, key, label, onClick, disabled }) => (
+          ].map(({ icon: Icon, key, label, onClick }) => (
             <button
               key={key}
               onClick={onClick}
-              disabled={disabled}
-              className="flex-1 glass rounded-xl py-3 flex flex-col items-center gap-1.5 hover:bg-glass-border/20 transition-colors active:scale-[0.98] disabled:opacity-50"
+              className="flex-1 glass rounded-xl py-3 flex flex-col items-center gap-1.5 hover:bg-glass-border/20 transition-colors active:scale-[0.98]"
             >
               <Icon size={18} className="text-accent" />
               <span className="text-muted-foreground text-xs">{label}</span>
@@ -156,11 +176,21 @@ const Capture = () => {
               <BookOpen size={14} />
               <span className="text-xs font-medium">{t("capture.book_info_label")}</span>
             </div>
-            <input
+            <BookSearchInput
               value={bookTitle}
-              onChange={(e) => setBookTitle(e.target.value)}
+              onChange={(val) => {
+                setBookTitle(val);
+                setBookIsbn(null);
+                setBookCoverUrl(null);
+              }}
+              onSelect={(meta) => {
+                setBookTitle(meta.title);
+                setAuthor(meta.author ?? "");
+                setBookIsbn(meta.isbn);
+                setBookCoverUrl(meta.coverUrl);
+              }}
+              localBooks={localBooks}
               placeholder={t("capture.book_title_placeholder")}
-              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none border-b border-border/30 pb-2"
             />
             {recentBooks.length > 0 && (
               <div className="space-y-2">
@@ -175,6 +205,8 @@ const Capture = () => {
                       onClick={() => {
                         setBookTitle(book.title);
                         setAuthor(book.author ?? "");
+                        setBookIsbn(book.isbn ?? null);
+                        setBookCoverUrl(book.cover_url ?? null);
                       }}
                       className="shrink-0 rounded-full bg-glass-border/10 px-3 py-1.5 text-xs text-foreground hover:bg-glass-border/20"
                     >
@@ -185,12 +217,27 @@ const Capture = () => {
                 </div>
               </div>
             )}
-            <input
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder={t("capture.book_author_placeholder")}
-              className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
-            />
+            <div className="grid grid-cols-3 gap-3 items-center">
+              <input
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder={t("capture.book_author_placeholder")}
+                className="col-span-2 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+              />
+              <div className="flex items-center gap-1 border-l border-border/30 pl-3">
+                <span className="text-xs text-muted-foreground">p.</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={99999}
+                  value={pageStr}
+                  onChange={(e) => setPageStr(e.target.value)}
+                  placeholder={t("capture.page_placeholder")}
+                  className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Thoughts */}
@@ -254,6 +301,12 @@ const Capture = () => {
           }}
         />
       )}
+
+      <ImportHighlightsSheet
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        onImported={() => void loadRecentBooks()}
+      />
     </div>
   );
 };

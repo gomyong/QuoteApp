@@ -55,7 +55,7 @@ const Index = () => {
 
   const recent = quotes.slice(0, 10);
 
-  const { requestActions, portal } = useQuoteActions({
+  const { requestActions, requestShare, portal } = useQuoteActions({
     getBook: (q: Quote) => (q.book_id ? bookById.get(q.book_id) : undefined),
     onChanged: refresh,
   });
@@ -132,6 +132,13 @@ const Index = () => {
               content={featured.content}
               bookTitle={featuredBook?.title}
               author={featuredBook?.author ?? undefined}
+              page={featured.page}
+              isFavorite={featured.is_favorite}
+              onToggleFavorite={async () => {
+                await repo.toggleFavorite(featured.id);
+                refresh();
+              }}
+              onShare={() => requestShare(featured)}
               onShuffle={quotes.length > 1 ? handleShuffle : undefined}
             />
           ) : (
@@ -166,11 +173,13 @@ const Index = () => {
                     bookTitle={b?.title}
                     author={b?.author ?? undefined}
                     thoughts={q.thoughts ?? undefined}
+                    page={q.page}
                     isFavorite={q.is_favorite}
                     onToggleFavorite={async () => {
                       await repo.toggleFavorite(q.id);
                       refresh();
                     }}
+                    onShare={() => requestShare(q)}
                     onLongPress={() => requestActions(q)}
                     index={i}
                   />

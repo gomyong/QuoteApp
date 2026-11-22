@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  Bell,
   BookMarked,
   CheckCircle2,
   Crown,
   ExternalLink,
   FileDown,
   FileText,
+  FileUp,
   Globe,
   Heart,
   Image as ImageIcon,
@@ -55,6 +57,16 @@ import { TIP_PREVIEW_SETTINGS } from "@/config/tipPreview";
 import TipSheet from "@/components/TipSheet";
 import ProSheet from "@/components/ProSheet";
 import ArchiveExportSheet from "@/components/ArchiveExportSheet";
+import ImportHighlightsSheet from "@/components/ImportHighlightsSheet";
+import {
+  DEFAULT_REMINDER_SETTINGS,
+  loadReminderSettings,
+  rescheduleDailyReminders,
+  saveReminderSettings,
+  sendPreviewReminder,
+  type ReminderSettings,
+} from "@/features/reminders/dailyReminder";
+import { toast } from "@/components/ui/sonner";
 
 import {
   QUOTE_SUPPORT_URL,
@@ -98,6 +110,9 @@ const Settings = () => {
   const [tipOpen, setTipOpen] = useState(false);
   const [proOpen, setProOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [reminder, setReminder] = useState<ReminderSettings>(DEFAULT_REMINDER_SETTINGS);
+  const [reminderNote, setReminderNote] = useState<string | null>(null);
   const { isPro, loading: proLoading } = usePro();
   const formatRelative = useRelativeTime();
 
@@ -110,21 +125,52 @@ const Settings = () => {
 
   useEffect(() => {
     if (searchParams.get("openTip") === "1") setTipOpen(true);
-    if (searchParams.get("openPro") === "1") setProOpen(true);
+    if (PRO_ENABLED && searchParams.get("openPro") === "1") setProOpen(true);
     if (searchParams.get("openArchive") === "1") {
-      if (isPro) setArchiveOpen(true);
+      if (!PRO_ENABLED || isPro) setArchiveOpen(true);
       else setProOpen(true);
     }
   }, [searchParams, isPro]);
 
   useEffect(() => {
     (async () => {
-      const s = await repo.getSettings();
+      const [s, rem] = await Promise.all([
+        repo.getSettings(),
+        loadReminderSettings(),
+      ]);
       setStoreImages(s.storeImages);
+      setReminder(rem);
     })();
     const unsub = subscribeSyncStatus(setSyncStatus);
     return unsub;
   }, []);
+
+  const updateReminder = async (
+    next: ReminderSettings,
+    requestPerm: boolean,
+  ) => {
+    setReminder(next);
+    setReminderNote(null);
+    await saveReminderSettings(next);
+    const res = await rescheduleDailyReminders(next, requestPerm);
+    if (res.status === "denied") {
+      const reverted = { ...next, enabled: false };
+      setReminder(reverted);
+      await saveReminderSettings(reverted);
+      setReminderNote(t("settings.reminder_denied"));
+    } else if (res.status === "empty" && next.enabled) {
+      setReminderNote(t("settings.reminder_empty"));
+    } else if (res.status === "scheduled" || res.status === "web_saved") {
+      setReminderNote(t("settings.reminder_scheduled"));
+    }
+  };
+
+  const handleReminderPreview = async () => {
+    const res = await sendPreviewReminder();
+    if (res === "sent") toast.success(t("settings.reminder_preview_ok"));
+    else if (res === "empty") toast.error(t("settings.reminder_empty"));
+    else toast.error(t("settings.reminder_denied"));
+  };
 
   const toggleImages = async (next: boolean) => {
     setStoreImages(next);
@@ -241,7 +287,7 @@ const Settings = () => {
           </div>
         </section>
 
-        {PRO_ENABLED && (
+        {PRO_ENABLED ? (
           <section className="glass rounded-2xl p-4 mb-4">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="flex items-center gap-3 min-w-0">
@@ -322,7 +368,134 @@ const Settings = () => {
               </div>
             )}
           </section>
+        ) : (
+          <section className="glass rounded-2xl p-4 mb-4">
+            <div className="flex items-center gap-3 mb-2">
+              <FileDown size={16} className="text-accent flex-none" />
+              <div className="min-w-0">
+                <div className="text-sm text-foreground">{t("archive.title")}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t("settings.archive_free_desc")}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="text-sm py-2.5 px-3 rounded-xl border border-glass-border/30 text-foreground hover:bg-glass-border/10 inline-flex items-center justify-center gap-1.5"
+              >
+                <FileUp size={14} className="text-accent" />
+                {t("settings.import_cta")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setArchiveOpen(true)}
+                className="text-sm py-2.5 px-3 rounded-xl bg-accent text-accent-foreground inline-flex items-center justify-center gap-1.5"
+              >
+                <FileDown size={14} />
+                {t("settings.pro_archive_cta")}
+              </button>
+            </div>
+          </section>
         )}
+
+        <section className="glass rounded-2xl p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell size={16} className="text-accent" />
+              <div>
+                <div className="text-sm text-foreground">{t("settings.reminder_title")}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t("settings.reminder_desc")}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                void updateReminder(
+                  { ...reminder, enabled: !reminder.enabled },
+                  !reminder.enabled,
+                )
+              }
+              role="switch"
+              aria-checked={reminder.enabled}
+              className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${
+                reminder.enabled ? "bg-accent" : "bg-glass-border/40"
+              }`}
+            >
+              <span
+                className={`absolute left-0 top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                  reminder.enabled ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+
+          {reminder.enabled && (
+            <div className="mt-3 pt-3 border-t border-glass-border/20 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <label htmlFor="reminder-time" className="text-muted-foreground">
+                  {t("settings.reminder_time")}
+                </label>
+                <input
+                  id="reminder-time"
+                  type="time"
+                  value={`${String(reminder.hour).padStart(2, "0")}:${String(
+                    reminder.minute,
+                  ).padStart(2, "0")}`}
+                  onChange={(e) => {
+                    const [hh, mm] = e.target.value.split(":").map(Number);
+                    if (Number.isFinite(hh) && Number.isFinite(mm)) {
+                      void updateReminder(
+                        { ...reminder, hour: hh, minute: mm },
+                        false,
+                      );
+                    }
+                  }}
+                  className="rounded-lg border border-glass-border/30 bg-background px-2.5 py-1 text-xs text-foreground"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {t("settings.reminder_favorites_only")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void updateReminder(
+                      { ...reminder, favoritesOnly: !reminder.favoritesOnly },
+                      false,
+                    )
+                  }
+                  className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                    reminder.favoritesOnly
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-glass-border/15 text-foreground"
+                  }`}
+                >
+                  {reminder.favoritesOnly
+                    ? t("settings.reminder_pool_fav")
+                    : t("settings.reminder_pool_all")}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void handleReminderPreview()}
+                className="w-full text-xs py-2 rounded-xl border border-glass-border/30 text-foreground hover:bg-glass-border/10"
+              >
+                {t("settings.reminder_preview_cta")}
+              </button>
+            </div>
+          )}
+
+          {reminderNote && (
+            <p className="mt-2 text-[11px] text-muted-foreground">{reminderNote}</p>
+          )}
+        </section>
 
         <section className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between">
@@ -344,7 +517,7 @@ const Settings = () => {
               }`}
             >
               <span
-                className={`absolute top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                className={`absolute left-0 top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
                   storeImages ? "translate-x-5" : "translate-x-0.5"
                 }`}
               />
@@ -477,6 +650,7 @@ const Settings = () => {
               <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
                 {t("settings.covers_providers_status", {
                   kakao: providerOnOff("kakao"),
+                  aladin: providerOnOff("aladin"),
                   naver: providerOnOff("naver"),
                   openLibrary: providerOnOff("openLibrary"),
                   google: providerOnOff("google"),
@@ -558,9 +732,11 @@ const Settings = () => {
                 ? TIP_PREVIEW_SETTINGS.description
                 : t("settings.support_dev_desc")}
             </p>
-            <p className="text-[11px] text-muted-foreground/80 mb-3">
-              {t("settings.support_dev_not_pro")}
-            </p>
+            {PRO_ENABLED && (
+              <p className="text-[11px] text-muted-foreground/80 mb-3">
+                {t("settings.support_dev_not_pro")}
+              </p>
+            )}
             {isTipSheetEnabled() ? (
               <button
                 type="button"
@@ -579,11 +755,15 @@ const Settings = () => {
         )}
 
         <TipSheet open={tipOpen} onClose={() => setTipOpen(false)} />
-        <ProSheet open={proOpen} onClose={() => setProOpen(false)} />
+        {PRO_ENABLED && <ProSheet open={proOpen} onClose={() => setProOpen(false)} />}
         <ArchiveExportSheet
           open={archiveOpen}
           onClose={() => setArchiveOpen(false)}
           onNeedPro={() => setProOpen(true)}
+        />
+        <ImportHighlightsSheet
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
         />
 
         <section className="glass rounded-2xl p-4 mt-4">

@@ -37,8 +37,9 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
     };
   }, []);
 
+  const MAX_OCR_PAGES = 10;
   const isRunning = pages.some((p) => p.status === "running");
-  const canAddPage = pages.length < 2 && !isRunning;
+  const canAddPage = pages.length < MAX_OCR_PAGES && !isRunning;
 
   const combinedResult = useMemo<OcrResult | null>(() => {
     const done = pages.filter((p) => p.status === "done" && p.result?.fullText);
@@ -120,7 +121,14 @@ const CaptureFromImage = ({ onConfirm, onClose }: Props) => {
     >
       <div className="relative z-10 max-w-lg mx-auto px-5 pt-12 pb-24">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-foreground text-lg font-semibold">{t("capture.ocr_title")}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-foreground text-lg font-semibold">{t("capture.ocr_title")}</h2>
+            {pages.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {pages.length}/{MAX_OCR_PAGES}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
