@@ -164,14 +164,14 @@ const EditQuoteSheet = ({ open, quote, book, saving, onClose, onSave }: Props) =
                     localBooks={localBooks}
                     placeholder={t("edit.book_title_placeholder")}
                   />
-                  <div className="grid grid-cols-3 gap-3 items-center">
+                  <div className="grid grid-cols-5 gap-3 items-center">
                     <input
                       value={author}
                       onChange={(e) => setAuthor(e.target.value)}
                       placeholder={t("capture.book_author_placeholder")}
-                      className="col-span-2 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
+                      className="col-span-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none"
                     />
-                    <div className="flex items-center gap-1 border-l border-border/30 pl-3">
+                    <div className="col-span-2 flex items-center gap-1 border-l border-border/30 pl-3">
                       <span className="text-xs text-muted-foreground">p.</span>
                       <input
                         type="number"

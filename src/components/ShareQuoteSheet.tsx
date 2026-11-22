@@ -15,6 +15,8 @@ import {
   Image as ImageIcon,
   Info,
   Loader2,
+  PencilLine,
+  RotateCcw,
   Share2,
   X,
 } from "lucide-react";
@@ -75,6 +77,9 @@ const ShareQuoteSheet = ({
   const [sharing, setSharing] = useState(false);
   const [removeWatermark, setRemoveWatermark] = useState(false);
   const [proOpen, setProOpen] = useState(false);
+  const [editingLineBreaks, setEditingLineBreaks] = useState(false);
+  const [customContent, setCustomContent] = useState<string | null>(null);
+  const [debouncedCustomContent, setDebouncedCustomContent] = useState<string | null>(null);
   const canToggleWatermark = !PRO_ENABLED || isPro;
   const renderToken = useRef(0);
 
@@ -87,7 +92,28 @@ const ShareQuoteSheet = ({
     setSelected(new Set(sentences.map((_, i) => i)));
   }, [sentences]);
 
+  useEffect(() => {
+    if (!open) {
+      setEditingLineBreaks(false);
+      setCustomContent(null);
+      setDebouncedCustomContent(null);
+    }
+  }, [open, content]);
+
+  useEffect(() => {
+    if (customContent === null) {
+      setDebouncedCustomContent(null);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setDebouncedCustomContent(customContent);
+    }, 180);
+    return () => window.clearTimeout(id);
+  }, [customContent]);
+
   const toggleSentence = (i: number) => {
+    setCustomContent(null);
+    setDebouncedCustomContent(null);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(i)) next.delete(i);
@@ -96,7 +122,7 @@ const ShareQuoteSheet = ({
     });
   };
 
-  const effectiveContent = useMemo(() => {
+  const baseSelectedContent = useMemo(() => {
     if (!multiSentence) return content;
     const picked = Array.from(selected)
       .sort((a, b) => a - b)
@@ -104,6 +130,11 @@ const ShareQuoteSheet = ({
       .filter(Boolean);
     return picked.join(" ").trim();
   }, [multiSentence, content, selected, sentences]);
+
+  const effectiveContent = useMemo(() => {
+    if (debouncedCustomContent !== null) return debouncedCustomContent.trim();
+    return baseSelectedContent;
+  }, [debouncedCustomContent, baseSelectedContent]);
 
   useEffect(() => {
     if (!open) {
@@ -319,6 +350,60 @@ const ShareQuoteSheet = ({
                   />
                 </div>
               )}
+
+              {/* Manual line-break adjuster (preview-only, leaves saved note unchanged) */}
+              <div className="mb-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingLineBreaks((v) => {
+                        const next = !v;
+                        if (next && customContent === null) {
+                          setCustomContent(baseSelectedContent);
+                          setDebouncedCustomContent(baseSelectedContent);
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition-colors ${
+                      editingLineBreaks || customContent !== null
+                        ? "bg-accent/15 text-accent font-medium"
+                        : "bg-glass-border/10 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <PencilLine size={13} />
+                    <span>{t("share.edit_linebreaks")}</span>
+                  </button>
+                  {customContent !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomContent(null);
+                        setDebouncedCustomContent(null);
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw size={12} />
+                      <span>{t("share.reset_text")}</span>
+                    </button>
+                  )}
+                </div>
+
+                {editingLineBreaks && (
+                  <div className="rounded-xl bg-glass-border/10 p-2.5 space-y-1.5">
+                    <textarea
+                      value={customContent ?? baseSelectedContent}
+                      onChange={(e) => setCustomContent(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-lg bg-card/80 px-3 py-2 text-xs text-foreground leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                    <p className="text-[11px] text-muted-foreground px-0.5">
+                      {t("share.edit_linebreaks_hint")}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {image && (image.wasPromoted || image.tooLong) && (
                 <div className="mb-3 space-y-2">
