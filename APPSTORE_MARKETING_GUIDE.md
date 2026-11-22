@@ -1,111 +1,141 @@
-# Quote — App Store 순위권 도약을 위한 리뉴얼 가이드
+# Quote — App Store 순위권 도약을 위한 풀 리뉴얼 가이드 (이미지 + 카피 + ASO)
 
 > 벤치마킹 레퍼런스: **tota: 예산 지키는 장보기 계산기** (`id6826840242`)
-> 비교 진단 및 제작된 새 스크린샷 저장 경로: [`docs/screenshots/appstore-v2/`](./docs/screenshots/appstore-v2/)
+> 프리뷰 스크린샷 폴더: [`docs/screenshots/appstore-v2/`](./docs/screenshots/appstore-v2/)
 
 ---
 
-## 1. 왜 지금 페이지가 약하고, 무엇을 바꾸면 순위권이 되는가?
+## 1. 기존 Quote vs tota vs 리뉴얼 Quote 비교 진단
 
-| 항목 | 현재 Quote (`v1.0.1`) | tota (`id6826840242`) / 순위권 기준 | 리뉴얼 전략 |
+| 항목 | 기존 Quote (`v1.0.1`) | tota (`id6826840242`) | 리뉴얼 Quote (`v1.1.0`) |
 | --- | --- | --- | --- |
-| **앱 이름 & ASO** | `Quote` (검색 키워드 0개) | `tota: 예산 지키는 장보기 계산기` (이름에 핵심 가치+키워드) | **`Quote: 밑줄 문장 스캔 · 독서 노트`** 로 한국어 검색어 확보 |
-| **지원 언어 메타** | `EN 영어` 만 표기 (한국어 누락) | `EN + 1 More` (영/한 모두 표기) | 기본 언어에 **한국어 · 영어 · 일본어** 모두 활성화 |
-| **스크린샷 첫 3장** | 배터리 `13%`, 오타 노출, 설명 없는 생 스샷 3장 | 8장 통일 브랜드 컬러 + 2줄 혜택 헤드라인 + 확대 UI | **6장 Flat Navy 마케팅 프레임 (`9:41`, 풀배터리, 핵심 UI 팝아웃)** |
-| **핵심 기능 노출** | 촬영/스캔·공유 카드가 스샷에 없음 | 1번부터 카메라 스캔·계산 핵심을 직관적으로 노출 | **1번 OCR 스캔 · 2번 감성 카드 · 3번 매일 알림** 전면 배치 |
-| **설명 톤앤매너** | 딱딱한 개조식(`~입니다`, 명사형 나열) | `■` 소제목 + 구체적 상황 묘사 + `~해요` 구어체 + 안심 문구 | 독서가의 실제 불편을 짚는 **공감형 · 장면 중심 서술** |
+| **앱 이름** | `Quote` (키워드 0개) | `tota: 예산 지키는 장보기 계산기` | **`Quote: 사진으로 담는 독서 문장 노트`** |
+| **부제** | 없음 | 콜론 뒤 핵심 가치 명시 | **`1초 책 페이지 촬영 · 감성 카드 & 매일 알림`** |
+| **지원 언어** | `EN 영어`만 등록 (한국어 누락) | `EN + 1 More` (영/한 모두 등록) | **`한국어 · 영어 · 일본어` 모두 등록** |
+| **설명 구성** | 6줄짜리 짧은 기능 목록 (`~입니다`) | 10개 이상 `■` 섹션 + 구체적 상황 + `~해요` 구어체 | **8개 `■` 장면 중심 섹션 + `~해요` 구어체 + 안심 문구** |
+| **스크린샷** | 배터리 `13%` 빨간 아이콘 + 오타 + 생 스샷 3장 | 브랜드 컬러 통일 + 2줄 혜택 카피 + UI 팝아웃 8장 | **`9:41` 풀배터리 + Flat Navy + UI 팝아웃 6장** |
 
 ---
 
 ## 2. App Store Connect 복붙용 메타데이터 (한국어)
 
-### ① 앱 이름 (30자 제한 — 추천 1순위)
+### ① 앱 이름 (30자 제한)
 ```text
 Quote: 사진으로 담는 독서 문장 노트
 ```
-> *대안 (더 짧은 키워드형, 18자):* `Quote: 밑줄 문장 스캔 · 독서 노트`
+> *짧은 키워드형 대안 (18자):* `Quote: 밑줄 문장 스캔 · 독서 노트`
 
 ### ② 부제 Subtitle (30자 제한)
 ```text
 1초 책 페이지 촬영 · 감성 카드 & 매일 알림
 ```
 
-### ③ 프로모션 텍스트 Promotional Text (170자 제한 — 언제든 즉시 수정 가능)
+### ③ 프로모션 텍스트 Promotional Text (170자 제한)
 ```text
-책 속 밑줄을 카메라로 찍으면 텍스트로 쏙. 감성 문장 카드, 매일 오늘의 문장 알림, 자동 책 표지 서재까지 광고 없이 완전 무료로 기록하세요.
+밑줄 친 문장, 카메라로 찍기만 하면 텍스트로 쏙. 감성 문장 카드 제작과 직접 줄바꿈 수정, 매일 오늘의 문장 알림, 자동 책 표지 서재까지 광고 없이 완전 무료로 만나보세요.
 ```
 
-### ④ 키워드 Keywords (100바이트 이내, 쉼표 뒤 공백 없이)
+### ④ 검색 키워드 Keywords (100바이트 이내, 쉼표 뒤 공백 없이)
 ```text
 독서노트,독서기록,문장수집,책밑줄,인용구,북노트,오씨알,문장카드,오늘의문장,독서앱,필사,책기록,하이라이트,마크다운,서재
 ```
 
-### ⑤ 앱 설명 Description (tota 구조 벤치마킹 · 복붙용)
+### ⑤ 앱 설명 Description (tota 스타일 벤치마킹 · 장면/경험 중심 풀버전)
 ```text
-지금 밑줄 친 문장, 1초 만에 내 서재로.
+밑줄만 긋고 덮어둔 문장들, 1초 만에 다시 꺼내 보세요.
 
-Quote는 종이책이나 이북리더기의 문장을 카메라로 찍으면 텍스트로 읽어 책별로 차곡차곡 모아 주는 독서 노트 앱이에요.
-읽고 덮어두면 잊히던 구절을, 다시 꺼내보고 간직할 수 있게 만들었어요.
+Quote는 종이책이나 전자책 화면에서 마음에 드는 문장을 카메라로 찍으면 텍스트로 읽어, 책별로 차곡차곡 모아 주는 독서 노트 앱이에요.
+읽을 땐 분명 좋았는데 덮고 나면 금세 잊히던 구절을, 다시 만나고 간직할 수 있게 만들었어요.
 
-■ 찍으면 바로 문장만 쏙
-· 종이책이나 전자책 화면을 최대 10장까지 연속 촬영해 한 번에 텍스트로 인식해요.
-· 전체 페이지 중에서 내가 원하는 문장만 톡톡 골라 깔끔하게 저장할 수 있어요.
-· 직접 타이핑하거나 리디·밀리·킨들에서 복사한 문장도 한꺼번에 불러와요.
+■ 찍기만 하면, 원하는 문장만 쏙
+· 책 페이지를 카메라로 찍거나 사진첩에서 고르면 글자를 자동으로 읽어요.
+· 한 번에 최대 10장까지 연속으로 불러와, 긴 글이나 여러 페이지도 끊김 없이 스캔해요.
+· 인식된 문장들이 카드로 나뉘어 뜨면, 내가 간직하고 싶은 문장만 톡톡 골라 저장해요.
+· 손으로 옮겨 적을 필요 없이, 필요할 땐 직접 입력과 음성 메모도 바로 기록할 수 있어요.
 
-■ 원하는 호흡대로, 감성 문장 카드
-· 저장한 문장을 페이퍼·네이비·다크 3가지 테마와 고딕·명조 서체로 감성 이미지 카드(4:5 / 9:16)로 만들어요.
-· 공유하기 전에 직접 Enter를 눌러 원하는 위치에서 줄바꿈을 조절하고 바로 저장·공유할 수 있어요.
-· 그날 남긴 나의 생각과 페이지(선택)까지 카드에 함께 담을 수 있어요.
+■ 제목만 치면 표지까지 알아서
+· 책 제목을 입력하면 실시간 검색으로 책 제목·저자·표지 이미지까지 자동으로 찾아줘요.
+· 방금 읽은 책이나 내 서재에 이미 있는 책은 상단에 바로 떠서 한 번만 누르면 이어서 저장돼요.
+· 페이지 번호는 굳이 쓰지 않아도 괜찮고(선택), 기록하고 싶은 쪽수만 가볍게 남길 수 있어요.
+
+■ 원하는 호흡대로, 감성 문장 카드 공유
+· 저장한 문장을 페이퍼·네이비·다크 3가지 테마와 고딕·명조 서체, 4:5 또는 9:16 비율의 이미지 카드로 만들어요.
+· 공유하기 전에 '줄바꿈 직접 수정'을 열어 Enter만 누르면, 내가 원하는 호흡 그대로 줄을 바꿔 카드에 담을 수 있어요. (저장된 원본 문장은 그대로 유지돼요.)
+· 그날 적었던 나의 생각이나 페이지 번호도 카드에 함께 넣거나 뺄 수 있어요.
 
 ■ 덮어둔 밑줄, 매일 다시 만나요
-· 원하는 시간을 정해두면 내가 저장했던 문장 중 하나가 매일 아침·저녁 알림으로 찾아와요.
-· 바쁜 일상 속에서도 예전에 나를 울렸던 한 줄을 잠금화면에서 다시 만날 수 있어요.
+· 원하는 시간을 정해 두면 내가 저장했던 문장 중 하나가 매일 정해진 시간에 알림으로 찾아와요.
+· 홈 화면 맨 위 '오늘의 문장' 카드에서 셔플 버튼 한 번으로 지나간 문장을 다시 꺼내 읽고, 바로 공유할 수도 있어요.
 
-■ 제목만 치면 표지까지 자동 완성
-· 책 제목만 입력하면 알라딘·카카오 등 도서 검색을 통해 책 표지와 저자가 자동으로 채워져요.
-· 문장과 함께 남긴 페이지 번호(선택)와 나의 생각까지 책별 아카이브로 정갈하게 모아요.
+■ 나의 생각까지, 차분한 책별 서재
+· 책을 기준으로 문장이 깔끔하게 모여, 한 권의 책을 다 읽고 나면 나만의 하이라이트 아카이브가 완성돼요.
+· 문장 아래 그날 느낀 짧은 생각을 함께 적어두고, 아끼는 문장은 즐겨찾기로 따로 모아 보세요.
+· 키워드 검색으로 예전에 읽었던 책과 문장을 순식간에 다시 찾아낼 수 있어요.
 
-■ 내 데이터는 내 손에, 오프라인도 즉시
-· 비행기 안이나 서점에서도 인터넷 없이 바로 기록하고, 로그인하면 기기 간 자동으로 동기화돼요.
-· 내가 모은 모든 책과 문장은 언제든 깔끔한 Markdown 파일로 내보내 영구 보관할 수 있어요.
+■ 흩어진 전자책 밑줄도 한곳에
+· 리디북스, 밀리의 서재에서 복사한 독서노트나 Kindle My Clippings(.txt) 파일을 통째로 붙여넣고 불러올 수 있어요.
+· 종이책과 전자책에서 모은 모든 문장을 하나의 서재에서 통합 관리해요.
 
-■ 광고 없이, 가입 없이, 완전 무료
-· 시작할 때 번거로운 회원가입을 요구하지 않아요. 설치하자마자 바로 첫 문장을 기록할 수 있어요.
-· 배너 광고나 기능 잠금 구독 없이, 모든 기능을 누구나 무료로 이용할 수 있어요.
+■ 오프라인에서도 즉시, 내 데이터는 내 손에
+· 비행기 안이나 지하철, 서점에서도 인터넷 연결 없이 바로 기록되고 로컬에 안전하게 저장돼요.
+· 로그인하면 여러 기기에서 자동으로 동기화되고, 원할 땐 전체 기록을 깔끔한 Markdown 파일로 내보내 영구 소장할 수 있어요.
 
-Quote와 함께 흩어져 있던 문장들을 평생 꺼내 보는 나만의 문장 서재로 만들어 보세요.
+■ 가입 없이, 광고 없이, 사진은 안전하게
+· 앱을 깔고 번거로운 회원가입을 하지 않아도 첫 문장을 바로 기록할 수 있어요.
+· 문장 인식 후 '원본 이미지 보관'을 꺼 두면 책 사진 원본은 저장하지 않고 텍스트만 가볍게 남겨요.
+· 독서 흐름을 깨는 배너 광고나 전면 광고 없이, 모든 기능을 누구나 무료로 이용할 수 있어요.
+
+Quote와 함께 읽고 지나친 문장들을 평생 곁에 두는 나만의 문장 서재로 만들어 보세요.
 ```
 
-### ⑥ 새로운 기능 What's New (이번 업데이트 출시 시)
+### ⑥ 새로운 기능 What's New (`v1.1.0` 업데이트 안내)
 ```text
-독서가들의 피드백을 반영해 더 편해졌어요.
+더 매끄럽게 모으고 예쁘게 나눌 수 있도록 크게 다듬었어요.
 
-· 책 검색 자동완성 강화: 제목만 입력해도 표지와 저자를 더 빠르고 정확하게 찾아요.
-· 공유 카드 줄바꿈 직접 수정: 이미지 카드 공유 전, 원하는 위치에서 Enter로 줄을 바꿀 수 있어요.
-· 매일 문장 알림 & 최대 10장 연속 OCR 스캔: 여러 페이지를 한 번에 찍고 매일 원하는 시간에 문장을 받아보세요.
-· 전자책 하이라이트 가져오기: 리디·밀리·킨들(My Clippings.txt) 기록을 한 번에 서재로 옮길 수 있어요.
+· 책 검색 자동완성 강화: 제목만 입력해도 도서 검색으로 표지와 저자를 빠르고 정확하게 채워줘요.
+· 공유 카드 줄바꿈 직접 수정: 이미지 카드 공유 전, 원하는 위치에서 Enter로 줄바꿈을 직접 조절해 저장·공유할 수 있어요.
+· 매일 오늘의 문장 알림: 내가 정한 시간에 저장한 문장 하나를 알림으로 받아볼 수 있어요.
+· 최대 10장 연속 OCR & 전자책 가져오기: 여러 페이지를 한 번에 스캔하고, 리디·밀리·킨들 하이라이트도 통째로 불러올 수 있어요.
+· 홈에서 바로 공유 & 페이지 선택 입력: 오늘의 문장·최근 기록에서 원탭으로 바로 카드를 만들고, 페이지는 필요할 때만 선택 입력할 수 있어요.
 ```
 
 ---
 
-## 3. 새로 제작된 프리뷰 이미지 세트 (`docs/screenshots/appstore-v2/`)
+## 3. App Store Connect 복붙용 메타데이터 (English — 영문 지역화용)
 
-App Store Connect 필수 해상도 2종으로 모두 제작되어 있습니다:
-- **6.9" 디스플레이 (`1290 × 2796` px)**: `*-6.9-1290x2796.png` (또는 `.jpg`)
-- **6.5" 디스플레이 (`1242 × 2688` px)**: `*-6.5-1242x2688.png` (또는 `.jpg`)
+- **App Name (30 chars)**: `Quote: Book Highlight & Notes`
+- **Subtitle (30 chars)**: `1-Sec Page Scan & Quote Cards`
+- **Promotional Text (170 chars)**:
+  `Turn underlined book pages into clean reading notes in 1 second. Create custom shareable quote cards with manual line breaks, daily reminders, and a calm library—100% free.`
+- **Keywords (100 chars)**:
+  `book notes,reading tracker,quote keeper,ocr scanner,book highlights,kindle clippings,reading log`
+- **Description (English)**:
+```text
+Bring back the lines you underlined and forgot.
 
-| 순서 | 파일명 | 핵심 메시지 (순위권 전환 포인트) |
-| --- | --- | --- |
-| **1번** | `01-ocr-scan-*` | **책 속 문장, 찍기만 하면 끝** (최대 10장 촬영 & 문장 선택 UI 팝아웃) |
-| **2번** | `02-share-cards-*` | **원하는 호흡대로, 한 장의 문장 카드** (3종 테마 카드 팬 + 줄바꿈 수정 강조) |
-| **3번** | `03-daily-reminder-*` | **덮어둔 밑줄, 매일 다시 만나요** (실제 iOS 잠금화면 알림 배너 + 홈 화면) |
-| **4번** | `04-book-shelf-*` | **제목만 치면 표지까지 자동 완성** (실시간 책 검색 + 자동 표지 서재 트윈 목업) |
-| **5번** | `05-thoughts-archive-*` | **밑줄 아래, 그날의 생각까지** (나의 생각·페이지 선택·즐겨찾기 아카이브) |
-| **6번** | `06-import-export-*` | **광고 없이, 가입 없이, 내 기록은 내 손에** (가져오기·마크다운 백업 + 0원/무광고 신뢰 카드) |
+Quote helps you capture memorable passages from paper books and e-readers in a single snap, organize them cleanly by book, and revisit what moved you.
 
----
+■ Scan pages in one second
+· Snap up to 10 pages at once or pick photos from your library—Quote recognizes text right on your device.
+· Tap only the exact sentences you want to keep instead of typing everything by hand.
 
-## 4. App Store Connect 추가 체크리스트 (순위 상승 필수)
-1. **기본 언어(Primary Language) + 지역화**: App Store Connect → 앱 정보 → `한국어` 지역화 추가 및 필수 메타 입력 (현재 스토어 메타에 `EN 영어`만 표기되어 한국어 검색 필터에서 손해를 보고 있습니다).
-2. **지원 URL / 마케팅 URL**: `https://quote.tealdot.dev/` 등록 (현재 `개인정보 처리방침`만 연결되어 있고 마케팅/개발자 웹사이트가 누락되어 있습니다).
-3. **기존 스샷 정리**: 배터리 `13%` 및 오타(`motaitonal`)가 노출된 기존 3장 대신 `docs/screenshots/appstore-v2/`의 1~6번을 순서대로 업로드하세요. (특히 **1~3번**이 App Store 검색 결과 목록에 나란히 노출되므로 순서를 그대로 유지하는 것이 전환율에 가장 좋습니다.)
+■ Custom quote cards with your own pacing
+· Turn any passage into a crisp 1080px image card in Paper, Navy, or Dark theme (Sans or Serif, 4:5 or 9:16).
+· Adjust line breaks directly with Enter before sharing so your card flows the exact way you want.
+
+■ Rediscover a line every day
+· Set a daily reminder time to receive one of your saved passages on your lock screen.
+· Shuffle "Quote of the Day" on Home whenever you want a fresh spark.
+
+■ Automatic book covers & calm archive
+· Search books by title as you type to auto-fill covers and authors.
+· Keep optional page numbers, personal thoughts, and favorites organized per book.
+
+■ Bring your e-book highlights & export anytime
+· Import copied highlights or Kindle My Clippings.txt files in one go.
+· Works offline first, syncs when signed in, and exports to clean Markdown whenever you want.
+
+■ No ads, no forced sign-up, completely free
+· Start capturing immediately without creating an account.
+· Zero ads and zero paywalls across every feature.
+```
